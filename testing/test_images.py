@@ -10,6 +10,7 @@ from tools.loader import TestLoader
 from detection.MtcnnDetector import MtcnnDetector
 from detection.detector import Detector
 from detection.fcn_detector import FcnDetector
+from training.mtcnn_config import config
 import cv2
 import argparse
 
@@ -17,27 +18,27 @@ def test(stage, testFolder):
     print("Start testing in %s"%(testFolder))
     detectors = [None, None, None]
     if stage in ['pnet', 'rnet', 'onet']:
-        modelPath = os.path.join(rootPath, 'tmp/model/pnet/')
+        modelPath = os.path.join(config.ROOT_PATH, 'tmp/model/pnet/')
         a = [b[5:-6] for b in os.listdir(modelPath) if b.startswith('pnet-') and b.endswith('.index')]
         maxEpoch = max(map(int, a)) # auto match a max epoch model
         modelPath = os.path.join(modelPath, "pnet-%d"%(maxEpoch))
         print("Use PNet model: %s"%(modelPath))
         detectors[0] = FcnDetector(P_Net,modelPath) 
     if stage in ['rnet', 'onet']:
-        modelPath = os.path.join(rootPath, 'tmp/model/rnet/')
+        modelPath = os.path.join(config.ROOT_PATH, 'tmp/model/rnet/')
         a = [b[5:-6] for b in os.listdir(modelPath) if b.startswith('rnet-') and b.endswith('.index')]
         maxEpoch = max(map(int, a))
         modelPath = os.path.join(modelPath, "rnet-%d"%(maxEpoch))
         print("Use RNet model: %s"%(modelPath))
         detectors[1] = Detector(R_Net, 24, 1, modelPath)
     if stage in ['onet']:
-        modelPath = os.path.join(rootPath, 'tmp/model/onet/')
+        modelPath = os.path.join(config.ROOT_PATH, 'tmp/model/onet/')
         a = [b[5:-6] for b in os.listdir(modelPath) if b.startswith('onet-') and b.endswith('.index')]
         maxEpoch = max(map(int, a))
         modelPath = os.path.join(modelPath, "onet-%d"%(maxEpoch))
         print("Use ONet model: %s"%(modelPath))
         detectors[2] = Detector(O_Net, 48, 1, modelPath)
-    mtcnnDetector = MtcnnDetector(detectors=detectors, min_face_size = 24, threshold=[0.9, 0.6, 0.7])
+    mtcnnDetector = MtcnnDetector(detectors=detectors, min_face_size = 24, threshold=[0.90, 0.6, 0.2])
 
     testImages = []
     for name in os.listdir(testFolder):

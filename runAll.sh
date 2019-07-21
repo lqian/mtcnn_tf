@@ -5,18 +5,18 @@ set -e
 echo "Hello! I will prepare training data and starting to training step by step."
 
 # 1. checking dataset if OK
-if [ ! -d "./dataset/WIDER_train/images" ]; then
-	echo "Error: The WIDER_train/images is not exist. Read dataset/README.md to get useful info."
-	exit
-fi
-if [ ! -d "./dataset/lfw_5590" ]; then
-	echo "Error: The lfw_5590 is not exist. Read dataset/README.md to get useful info."
-	exit
-fi
-echo "Checking dataset pass."
-if [ -d "./tmp" ]; then
-	echo "Warning: The tmp folder is not empty. A good idea is to run ./clearAll.sh to clear it before training."
-fi
+#if [ ! -d "./dataset/WIDER_train/images" ]; then
+#	echo "Error: The WIDER_train/images is not exist. Read dataset/README.md to get useful info."
+#	exit
+#fi
+#if [ ! -d "./dataset/lfw_5590" ]; then
+#	echo "Error: The lfw_5590 is not exist. Read dataset/README.md to get useful info."
+#	exit
+#fi
+#echo "Checking dataset pass."
+#if [ -d "./tmp" ]; then
+#	echo "Warning: The tmp folder is not empty. A good idea is to run ./clearAll.sh to clear it before training."
+#fi
 
 # 2. stage: P-Net
 ### generate training data(Face Detection Part) for PNet

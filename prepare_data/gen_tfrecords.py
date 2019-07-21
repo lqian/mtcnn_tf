@@ -9,7 +9,7 @@ from tools.tfrecord_utils import _process_image_withoutcoder, _convert_to_exampl
 import tensorflow as tf
 
 def __iter_all_data(net, iterType):
-    saveFolder = os.path.join(rootPath, "tmp/data/%s/"%(net))
+    saveFolder = "/train-data/DATA/mtcnn-tf/tmp/data/%s/"%(net)
     if net not in ['pnet', 'rnet', 'onet']:
         raise Exception("The net type error!")
     if not os.path.isfile(os.path.join(saveFolder, 'pos.txt')):
@@ -65,14 +65,14 @@ def __get_dataset(net, iterType):
         bbox['ynose'] = 0
         bbox['xleftmouth'] = 0
         bbox['yleftmouth'] = 0
-        bbox['xrightmouth'] = 0
-        bbox['yrightmouth'] = 0        
+#        bbox['xrightmouth'] = 0
+#       bbox['yrightmouth'] = 0        
         if len(info) == 6:
             bbox['xmin'] = float(info[2])
             bbox['ymin'] = float(info[3])
             bbox['xmax'] = float(info[4])
             bbox['ymax'] = float(info[5])
-        if len(info) == 12:
+        if len(info) == 10:
             bbox['xlefteye'] = float(info[2])
             bbox['ylefteye'] = float(info[3])
             bbox['xrighteye'] = float(info[4])
@@ -81,8 +81,8 @@ def __get_dataset(net, iterType):
             bbox['ynose'] = float(info[7])
             bbox['xleftmouth'] = float(info[8])
             bbox['yleftmouth'] = float(info[9])
-            bbox['xrightmouth'] = float(info[10])
-            bbox['yrightmouth'] = float(info[11])
+#            bbox['xrightmouth'] = float(info[10])
+#            bbox['yrightmouth'] = float(info[11])
         data_example['bbox'] = bbox
         dataset.append(data_example)
     return dataset
@@ -118,7 +118,7 @@ def gen_tfrecords(net, shuffling=False):
                 __add_to_tfrecord(filename, image_example, tfrecord_writer)
         tfrecord_writer.close()
         print('\n')
-    saveFolder = os.path.join(rootPath, "tmp/data/%s/"%(net))
+    saveFolder = "/train-data/DATA/mtcnn-tf/tmp/data/%s/"%(net)
     #tfrecord name 
     if net == 'pnet':
         tfFileName = os.path.join(saveFolder, "all.tfrecord")

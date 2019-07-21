@@ -38,6 +38,8 @@ class MtcnnDetector(object):
 
         h = bbox[:, 3] - bbox[:, 1] + 1
         w = bbox[:, 2] - bbox[:, 0] + 1
+#         max_side_w = w
+#         max_side_h = w * 12/30
         max_side = np.maximum(h, w)
         square_bbox[:, 0] = bbox[:, 0] + w * 0.5 - max_side * 0.5
         square_bbox[:, 1] = bbox[:, 1] + h * 0.5 - max_side * 0.5
@@ -86,7 +88,8 @@ class MtcnnDetector(object):
         -------
             bbox array
         """
-        cellsize = 12
+        cell_height = 12
+        cell_width= 12
         t_index = np.where(cls_map > threshold)
         # find nothing
         if t_index[0].size == 0:
@@ -97,8 +100,8 @@ class MtcnnDetector(object):
         score = cls_map[t_index[0], t_index[1]]
         boundingbox = np.vstack([np.round((self.stride * t_index[1]) / scale),
                                  np.round((self.stride * t_index[0]) / scale),
-                                 np.round((self.stride * t_index[1] + cellsize) / scale),
-                                 np.round((self.stride * t_index[0] + cellsize) / scale),
+                                 np.round((self.stride * t_index[1] + cell_width) / scale),
+                                 np.round((self.stride * t_index[0] + cell_height) / scale),
                                  score,
                                  reg])
         return boundingbox.T
@@ -131,12 +134,12 @@ class MtcnnDetector(object):
                 end point of the bbox in target image
             y, x : numpy array, n x 1
                 start point of the bbox in original image
-            ex, ex : numpy array, n x 1
+            ex, ey : numpy array, n x 1
                 end point of the bbox in original image
             tmph, tmpw: numpy array, n x 1
                 height and width of the bbox
         """
-        tmpw, tmph = bboxes[:, 2] - bboxes[:, 0] + 1, bboxes[:, 3] - bboxes[:, 1] + 1
+        tmpw, tmph = bboxes[:, 2] - bboxes[:, 0] + 1, bboxes[:, 3] - bboxes[:, 1] + 1 
         num_box = bboxes.shape[0]
         dx, dy = np.zeros((num_box,)), np.zeros((num_box,))
         edx, edy = tmpw.copy() - 1, tmph.copy() - 1
@@ -180,7 +183,7 @@ class MtcnnDetector(object):
         current_height, current_width, _ = im_resized.shape
         # for fcn
         all_boxes = list()
-        while min(current_height, current_width) > net_size:
+        while min(current_height, current_width) > 30:
             #return the result predicted by pnet
             #cls_cls_map : H*w*2
             #reg: H*w*4
@@ -240,9 +243,13 @@ class MtcnnDetector(object):
         num_boxes = dets.shape[0]
         cropped_ims = np.zeros((num_boxes, 24, 24, 3), dtype=np.float32)
         for i in range(num_boxes):
-            tmp = np.zeros((tmph[i], tmpw[i], 3), dtype=np.uint8)
-            tmp[dy[i]:edy[i] + 1, dx[i]:edx[i] + 1, :] = im[y[i]:ey[i] + 1, x[i]:ex[i] + 1, :]
-            cropped_ims[i, :, :, :] = (cv2.resize(tmp, (24, 24))-127.5) / 128
+#             print('tmp h {} tmp w {}'.format(tmph[i], tmpw[i]))
+            if  tmph[i]>0 and tmpw[i]>0 :
+                tmp = np.zeros((tmph[i], tmpw[i], 3), dtype=np.uint8)
+                tmp[dy[i]:edy[i] + 1, dx[i]:edx[i] + 1, :] = im[y[i]:ey[i] + 1, x[i]:ex[i] + 1, :]
+                cropped_ims[i, :, :, :] = (cv2.resize(tmp, (24, 24))-127.5) / 128
+            else:
+                cropped_ims[i, :, :, :] = np.zeros((24, 24, 3), dtype=np.float32);    
         #cls_scores : num_data*2
         #reg: num_data*4
         #landmark: num_data*10
@@ -286,6 +293,8 @@ class MtcnnDetector(object):
         for i in range(num_boxes):
             tmp = np.zeros((tmph[i], tmpw[i], 3), dtype=np.uint8)
             tmp[dy[i]:edy[i] + 1, dx[i]:edx[i] + 1, :] = im[y[i]:ey[i] + 1, x[i]:ex[i] + 1, :]
+            cv2.imshow('corp_ims', tmp)
+            cv2.waitKey(0)
             cropped_ims[i, :, :, :] = (cv2.resize(tmp, (48, 48))-127.5) / 128
         cls_scores, reg,landmark = self.onet_detector.predict(cropped_ims)
         #prob belongs to face
@@ -299,12 +308,11 @@ class MtcnnDetector(object):
             landmark = landmark[keep_inds]
         else:
             return None, None, None
-        #width
-        w = boxes[:,2] - boxes[:,0] + 1
-        #height
-        h = boxes[:,3] - boxes[:,1] + 1
-        landmark[:,0::2] = (np.tile(w,(5,1)) * landmark[:,0::2].T + np.tile(boxes[:,0],(5,1)) - 1).T
-        landmark[:,1::2] = (np.tile(h,(5,1)) * landmark[:,1::2].T + np.tile(boxes[:,1],(5,1)) - 1).T        
+        # bbox width and height
+        bw = boxes[:,2] - boxes[:,0] + 1        
+        bh = boxes[:,3] - boxes[:,1] + 1
+        landmark[:,0::2] = (np.tile(bw,(4,1)) * landmark[:,0::2].T + np.tile(boxes[:,0],(4,1)) - 1).T
+        landmark[:,1::2] = (np.tile(bh,(4,1)) * landmark[:,1::2].T + np.tile(boxes[:,1],(4,1)) - 1).T        
         boxes_c = self.calibrate_box(boxes, reg)
         boxes = boxes[py_nms(boxes, 0.6, "Minimum")]
         keep = py_nms(boxes_c, 0.6, "Minimum")

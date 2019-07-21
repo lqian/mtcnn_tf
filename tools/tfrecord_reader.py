@@ -18,9 +18,10 @@ def read_single_tfrecord(tfrecord_file, batch_size, net):
             'image/encoded': tf.FixedLenFeature([], tf.string),#one image  one record
             'image/label': tf.FixedLenFeature([], tf.int64),
             'image/roi': tf.FixedLenFeature([4], tf.float32),
-            'image/landmark': tf.FixedLenFeature([10],tf.float32)
+            'image/landmark': tf.FixedLenFeature([8],tf.float32)
         }
     )
+    
     if net == 'pnet':
         image_size = 12
     elif net == 'rnet':
@@ -30,6 +31,7 @@ def read_single_tfrecord(tfrecord_file, batch_size, net):
     else:
         raise Exception("Unsupport your net type!")
     image = tf.decode_raw(image_features['image/encoded'], tf.uint8)
+#     image = tf.reshape(image, [image_size, 30*image_size/12, 3])
     image = tf.reshape(image, [image_size, image_size, 3])
     image = (tf.cast(image, tf.float32)-127.5) / 128
 
@@ -44,7 +46,7 @@ def read_single_tfrecord(tfrecord_file, batch_size, net):
     )
     label = tf.reshape(label, [batch_size])
     roi = tf.reshape(roi,[batch_size,4])
-    landmark = tf.reshape(landmark,[batch_size,10])
+    landmark = tf.reshape(landmark,[batch_size,8])
     return image, label, roi,landmark
 
 def read_multi_tfrecords(tfrecord_files, batch_sizes, net):

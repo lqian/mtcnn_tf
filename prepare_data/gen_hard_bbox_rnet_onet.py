@@ -45,12 +45,56 @@ def read_wider_annotation(widerImagesPath, annoTxtPath):
     data['bboxes'] = bboxes#all image bboxes
     return data
 
+def read_labels_annotation(annoTxtPath):
+    data = dict()
+    images = []
+    bboxes = [] 
+    
+    with open(annoTxtPath, 'r') as f:
+        lines = f.readlines()
+        for line in lines:                        
+            annotations = line.strip().split(' ')
+            if len(annotations) == 1:                
+                print("ignorre empty annotations sample: ", annotations[0])
+                continue
+            images.append(annotations[0])
+            one_image_boxes = np.array(annotations[1:], dtype=np.float32).reshape(-1, 12)[:, 0:4]
+            bboxes.append(one_image_boxes)
+    data['images'] = images  #all image pathes
+    data['bboxes'] = bboxes  #all image bboxes
+    return data
+
+#     while True:
+#         # image path
+#         imagepath = labelfile.readline().strip('\n')
+#         if not imagepath:
+#             break
+#          
+#         images.append(imagepath)
+#         # face numbers
+#         nums = labelfile.readline().strip('\n')
+#         one_image_bboxes = []
+#         for i in range(int(nums)):
+#             bb_info = labelfile.readline().strip('\n').split(' ')
+#             # only need x, y, w, h
+#             face_box = [float(bb_info[i]) for i in range(4)]
+#             xmin = face_box[0]
+#             ymin = face_box[1]
+#             xmax = xmin + face_box[2]
+#             ymax = ymin + face_box[3]
+#             one_image_bboxes.append([xmin, ymin, xmax, ymax])
+#         bboxes.append(one_image_bboxes)
+#     data['images'] = images#all image pathes
+#     data['bboxes'] = bboxes#all image bboxes
+#     return data
+
+
 def __save_data(stage, data, save_path):
     im_idx_list = data['images']
     gt_boxes_list = data['bboxes']
     num_of_images = len(im_idx_list)
     # save files
-    saveFolder = os.path.join(rootPath, "tmp/data/%s/"%(stage))
+    saveFolder = os.path.join(config.ROOT_PATH, "tmp/data/%s/"%(stage))
     print(">>>>>> Gen hard samples for %s..."%(stage))
     typeName = ["pos", "neg", "part"]
     saveFiles = {}
@@ -85,8 +129,9 @@ def __save_data(stage, data, save_path):
             # compute intersection over union(IoU) between current box and all gt boxes
             Iou = IoU(box, gts)
             cropped_im = img[y_top:y_bottom + 1, x_left:x_right + 1, :]
-            image_size = 24 if stage == "rnet" else 48
-            resized_im = cv2.resize(cropped_im, (image_size, image_size),
+            image_size = (24,24) if stage == "rnet" else (48,48)
+#             image_size = (60,24) if stage == "rnet" else (120,48)
+            resized_im = cv2.resize(cropped_im, image_size,
                                     interpolation=cv2.INTER_LINEAR)
             # save negative images and write label
             # Iou with all gts must below 0.3            
@@ -129,7 +174,7 @@ def test_net(batch_size, stage, thresh, min_face_size, stride):
     print(">>>>>> Detect bbox for %s..."%(stage))
     detectors = [None, None, None]
     if stage in ["rnet", "onet"]:
-        modelPath = os.path.join(rootPath, 'tmp/model/pnet/')
+        modelPath = os.path.join(config.ROOT_PATH, 'tmp/model/pnet/')
         a = [b[5:-6] for b in os.listdir(modelPath) if b.startswith('pnet-') and b.endswith('.index')]
         maxEpoch = max(map(int, a))
         modelPath = os.path.join(modelPath, "pnet-%d"%(maxEpoch))
@@ -137,7 +182,7 @@ def test_net(batch_size, stage, thresh, min_face_size, stride):
         PNet = FcnDetector(P_Net, modelPath)
         detectors[0] = PNet
     if stage in ["onet"]:
-        modelPath = os.path.join(rootPath, 'tmp/model/rnet/')
+        modelPath = os.path.join(config.ROOT_PATH, 'tmp/model/rnet/')
         a = [b[5:-6] for b in os.listdir(modelPath) if b.startswith('rnet-') and b.endswith('.index')]
         maxEpoch = max(map(int, a))
         modelPath = os.path.join(modelPath, "rnet-%d"%(maxEpoch))
@@ -145,9 +190,11 @@ def test_net(batch_size, stage, thresh, min_face_size, stride):
         RNet = Detector(R_Net, 24, batch_size, modelPath)
         detectors[1] = RNet
     # read annatation(type:dict)
-    widerImagesPath = os.path.join(rootPath, "dataset", "WIDER_train", "images")
-    annoTxtPath = os.path.join(rootPath, "dataset", "wider_face_train_bbx_gt.txt")
-    data = read_wider_annotation(widerImagesPath, annoTxtPath)
+    #widerImagesPath = os.path.join(rootPath, "dataset", "WIDER_train", "images")
+    #annoTxtPath = os.path.join(rootPath, "dataset", "wider_face_train_bbx_gt.txt")
+    annoTxtPath = os.path.join(rootPath, "dataset", "labels.txt")
+#     data = read_wider_annotation(widerImagesPath, annoTxtPath)
+    data = read_labels_annotation(annoTxtPath)
     mtcnn_detector = MtcnnDetector(detectors=detectors, min_face_size=min_face_size,
                                    stride=stride, threshold=thresh)
     test_data = TestLoader(data['images'])
@@ -183,12 +230,12 @@ if __name__ == '__main__':
     if stage == "rnet":
         batchSize = 1
         threshold = [0.4, 0.05]
-        minFace = 24
+        minFace = 30
         stride = 2
     elif stage == "onet":
         batchSize = 1
         threshold = [0.4, 0.05]
-        minFace = 24
+        minFace = 30
         stride = 2
     else:
         raise Exception("Invaild stage...Please use --stage")

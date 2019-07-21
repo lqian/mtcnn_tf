@@ -67,6 +67,7 @@ def train(netFactory, modelPrefix, endEpoch, dataPath, display=200, baseLr=0.01,
     if net == 'pnet': # PNet use this method to get data
         dataset_dir = os.path.join(dataPath, 'all.tfrecord')
         total_num = sum(1 for _ in tf.python_io.tf_record_iterator(dataset_dir))
+        print("total samples: ", total_num)
         image_batch, label_batch, bbox_batch, landmark_batch = read_single_tfrecord(dataset_dir, config.BATCH_SIZE, net)
     elif net in ['rnet', 'onet']: # RNet and ONet use 4 tfrecords to get data
         pos_dir = os.path.join(dataPath, 'pos.tfrecord')
@@ -86,21 +87,21 @@ def train(netFactory, modelPrefix, endEpoch, dataPath, display=200, baseLr=0.01,
             total_num += sum(1 for _ in tf.python_io.tf_record_iterator(d))
     #ratio 
     if net == 'pnet':
-        image_size = 12
+        image_size = [12, 12]
         ratio_cls_loss, ratio_bbox_loss, ratio_landmark_loss = 1.0, 0.5, 0.5
     elif net == 'rnet':
-        image_size = 24
+        image_size = [24, 24]
         ratio_cls_loss, ratio_bbox_loss, ratio_landmark_loss = 1.0, 0.5, 1.0
     elif net == 'onet':
         ratio_cls_loss, ratio_bbox_loss, ratio_landmark_loss = 1.0, 0.5, 1.0
-        image_size = 48
+        image_size = [48, 48]
     else:
         raise Exception("incorrect net type.")
     #define placeholder
-    input_image = tf.placeholder(tf.float32, shape=[config.BATCH_SIZE, image_size, image_size, 3], name='input_image')
+    input_image = tf.placeholder(tf.float32, shape=[config.BATCH_SIZE, image_size[0], image_size[1], 3], name='input_image')
     label = tf.placeholder(tf.float32, shape=[config.BATCH_SIZE], name='label')
     bbox_target = tf.placeholder(tf.float32, shape=[config.BATCH_SIZE, 4], name='bbox_target')
-    landmark_target = tf.placeholder(tf.float32,shape=[config.BATCH_SIZE,10],name='landmark_target')
+    landmark_target = tf.placeholder(tf.float32,shape=[config.BATCH_SIZE,8],name='landmark_target')
     #class,regression
     cls_loss_op,bbox_loss_op,landmark_loss_op,L2_loss_op,accuracy_op = netFactory(input_image, label, bbox_target,landmark_target,training=True)
     #train,update learning rate(3 loss)
@@ -139,7 +140,7 @@ def train(netFactory, modelPrefix, endEpoch, dataPath, display=200, baseLr=0.01,
                 break
             image_batch_array, label_batch_array, bbox_batch_array,landmark_batch_array = sess.run([image_batch, label_batch, bbox_batch,landmark_batch])
             #random flip
-            image_batch_array,landmark_batch_array = random_flip_images(image_batch_array,label_batch_array,landmark_batch_array)
+            #image_batch_array,landmark_batch_array = random_flip_images(image_batch_array,label_batch_array,landmark_batch_array)
             '''
             print image_batch_array.shape
             print label_batch_array.shape
@@ -170,6 +171,7 @@ def train(netFactory, modelPrefix, endEpoch, dataPath, display=200, baseLr=0.01,
         writer.close()
     coord.join(threads)
     sess.close()
+    print("trained!")
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Create hard bbox sample...',
@@ -179,7 +181,7 @@ def parse_args():
     parser.add_argument('--gpus', dest='gpus', help='specify gpu to run. eg: --gpus=0,1',
                         default='0', type=str)
     parser.add_argument('--epoch', dest='epoch', help='total epoch to training',
-                        default=30, type=int)
+                        default=300, type=int)
     parser.add_argument('--display', dest='display', help='how much step to display',
                         default=100, type=int)
     parser.add_argument('--lr', dest='lr', help='base learning rate',
@@ -192,8 +194,8 @@ if __name__ == "__main__":
     print "The training argument info is: ", args
     if args.stage not in ['pnet', 'rnet', 'onet']:
         raise Exception("Please specify stage by --stage=pnet or rnet or onet")
-    dataPath = os.path.join(rootPath, "tmp/data/%s"%(args.stage))
-    modelPrefix = os.path.join(rootPath, "tmp/model/%s/%s"%(args.stage, args.stage))
+    dataPath = os.path.join("/train-data/DATA/mtcnn-tf", "tmp/data/%s"%(args.stage))
+    modelPrefix = os.path.join("/train-data/DATA/mtcnn-tf/", "tmp/model/%s/%s"%(args.stage, args.stage))
     if not os.path.isdir(os.path.dirname(modelPrefix)):
         os.makedirs(os.path.dirname(modelPrefix))
     

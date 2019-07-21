@@ -2,6 +2,7 @@
 
 from easydict import EasyDict as edict
 
+
 config = edict()
 
 config.BATCH_SIZE = 384
@@ -12,3 +13,6 @@ config.BBOX_OHEM_RATIO = 0.7
 
 config.EPS = 1e-14
 config.LR_EPOCH = [6, 14, 20]
+
+config.ROOT_PATH = '/train-data/DATA/mtcnn-tf/'
+

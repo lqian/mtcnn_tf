@@ -7,10 +7,13 @@ rootPath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__
 sys.path.insert(0, rootPath)
 from tools.common_utils import IoU
 
-def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
-    srcDataSet = os.path.join(rootPath, srcDataSet)
-    srcAnnotations = os.path.join(rootPath, srcAnnotations)
-    saveFolder = os.path.join(rootPath, "tmp/data/pnet/")
+
+net_size=(12, 12)
+
+def gen_hard_bbox_pnet(srcAnnotations):
+#     srcDataSet = os.path.join(rootPath, srcDataSet)
+#     srcAnnotations = os.path.join(rootPath, srcAnnotations)
+    saveFolder = os.path.join(rootPath, "/train-data/DATA/mtcnn-tf/tmp/data/pnet/")
     print(">>>>>> Gen hard samples for pnet...")
     typeName = ["pos", "neg", "part"]
     saveFiles = {}
@@ -30,11 +33,11 @@ def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
         # image path
         imPath = annotation[0]
         # boxed change to float type
-        bbox = map(float, annotation[1:])
+        ## bbox = map(float, annotation[1:])
         # gt. each row mean bounding box
-        boxes = np.array(bbox, dtype=np.float32).reshape(-1, 4)
+        boxes = np.array(annotation[1:], dtype=np.float32).reshape(-1, 12)[:, 0:4]
         #load image
-        img = cv2.imread(os.path.join(srcDataSet, imPath + '.jpg'))
+        img = cv2.imread(os.path.join(imPath))
         idx += 1
         height, width, channel = img.shape
 
@@ -49,17 +52,21 @@ def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
             crop_box = np.array([nx, ny, nx + size, ny + size])
             # cal iou and iou must below 0.3 for neg sample
             iou = IoU(crop_box, boxes)
-            if np.max(iou) >= 0.3:
-                continue
-            # crop sample image
-            cropped_im = img[ny : ny + size, nx : nx + size, :]
-            resized_im = cv2.resize(cropped_im, (12, 12), interpolation=cv2.INTER_LINEAR)
-            # now to save it
-            save_file = os.path.join(saveFolder, "neg", "%s.jpg"%nIdx)
-            saveFiles['neg'].write(save_file + ' 0\n')
-            cv2.imwrite(save_file, resized_im)
-            nIdx += 1
-            negNum += 1
+            if len(annotation) == 1 or np.max(iou) < 0.3:                
+                # crop sample image            
+                cropped_im = img[ny : ny + size, nx : nx + size, :]
+                resized_im = cv2.resize(cropped_im, net_size, interpolation=cv2.INTER_LINEAR)
+                # now to save it
+                save_file = os.path.join(saveFolder, "neg", "%s.jpg"%nIdx)
+                saveFiles['neg'].write(save_file + ' 0\n')
+                cv2.imwrite(save_file, resized_im)
+                nIdx += 1
+                negNum += 1
+                
+        if len(annotation) == 1:
+            print("only genereate negative sample for: ", imPath)
+            continue
+        
         for box in boxes:
             # box (x_left, y_top, x_right, y_bottom)
             x1, y1, x2, y2 = box
@@ -84,7 +91,7 @@ def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
                 if np.max(iou) >= 0.3:
                     continue
                 cropped_im = img[ny1: ny1 + size, nx1: nx1 + size, :]
-                resized_im = cv2.resize(cropped_im, (12, 12), interpolation=cv2.INTER_LINEAR)
+                resized_im = cv2.resize(cropped_im, net_size, interpolation=cv2.INTER_LINEAR)
                 save_file = os.path.join(saveFolder, "neg", "%s.jpg"%nIdx)
                 saveFiles['neg'].write(save_file + ' 0\n')
                 cv2.imwrite(save_file, resized_im)
@@ -114,7 +121,7 @@ def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
                 #crop
                 cropped_im = img[int(ny1) : int(ny2), int(nx1) : int(nx2), :]
                 #resize
-                resized_im = cv2.resize(cropped_im, (12, 12), interpolation=cv2.INTER_LINEAR)
+                resized_im = cv2.resize(cropped_im, net_size, interpolation=cv2.INTER_LINEAR)
 
                 box_ = box.reshape(1, -1)
                 if IoU(crop_box, box_) >= 0.65:
@@ -136,4 +143,4 @@ def gen_hard_bbox_pnet(srcDataSet, srcAnnotations):
 
 
 if __name__ == "__main__":
-    gen_hard_bbox_pnet("dataset/WIDER_train/images/", "dataset/wider_face_train.txt")
+    gen_hard_bbox_pnet("/train-data/mtcnn_tf/dataset/labels.txt")

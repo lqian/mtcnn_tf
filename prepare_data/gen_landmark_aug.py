@@ -14,15 +14,15 @@ from tools.landmark_utils import rotate,flip
 
 def gen_landmark_data(srcTxt, net, augment=False):
     '''
-    srcTxt: each line is: 0=path, 1-4=bbox, 5-14=landmark 5points
+    srcTxt: each line is: 0=path, 1-4=bbox, 5-12=landmark 4points
     net: PNet or RNet or ONet
     augment: if enable data augmentation
     '''
     print(">>>>>> Start landmark data create...Stage: %s"%(net))
     srcTxt = os.path.join(rootPath, srcTxt)
-    saveFolder = os.path.join(rootPath, "tmp/data/%s/"%(net))
+    saveFolder = "/train-data/DATA/mtcnn-tf/tmp/data/%s/"%(net)
     saveImagesFolder = os.path.join(saveFolder, "landmark")
-    sizeOfNet = {"pnet": 12, "rnet": 24, "onet": 48}
+    sizeOfNet = {"pnet": (12, 12), "rnet": (24,24), "onet": (48,48)}
     if net not in sizeOfNet:
         raise Exception("The net type error!")
     if not os.path.isdir(saveImagesFolder):
@@ -33,20 +33,25 @@ def gen_landmark_data(srcTxt, net, augment=False):
     for (imgPath, bbox, landmarkGt) in getBboxLandmarkFromTxt(srcTxt):
         F_imgs = []
         F_landmarks = []        
+        if (bbox is None or landmarkGt is None):
+            print("ignore sample: ", imgPath)
+            continue
+            
         img = cv2.imread(imgPath)
         assert(img is not None)
         img_h, img_w, img_c = img.shape
         gt_box = np.array([bbox.left, bbox.top, bbox.right, bbox.bottom])
         f_face = img[bbox.top: bbox.bottom+1, bbox.left: bbox.right+1]
-        f_face = cv2.resize(f_face, (sizeOfNet[net], sizeOfNet[net]))
-        landmark = np.zeros((5, 2))
-        #normalize
+        f_face = cv2.resize(f_face, sizeOfNet[net])
+        landmark = np.zeros((4, 2))        
+        #normalize with bbox x, y, w, h
         for index, one in enumerate(landmarkGt):
-            rv = ((one[0]-gt_box[0])/(gt_box[2]-gt_box[0]), (one[1]-gt_box[1])/(gt_box[3]-gt_box[1]))
+#             rv = ((one[0]-gt_box[0])/(gt_box[2]-gt_box[0]), (one[1]-gt_box[1])/(gt_box[3]-gt_box[1]))
+            rv = ((one[0] - bbox.x)/bbox.w, (one[1] - bbox.y)/bbox.h)
             landmark[index] = rv
         F_imgs.append(f_face)
-        F_landmarks.append(landmark.reshape(10))
-        landmark = np.zeros((5, 2))        
+        F_landmarks.append(landmark.reshape(8))
+        landmark = np.zeros((4, 2))        
         if augment:
             x1, y1, x2, y2 = gt_box
             #gt's width
@@ -69,7 +74,7 @@ def gen_landmark_data(srcTxt, net, augment=False):
                     continue
                 crop_box = np.array([nx1,ny1,nx2,ny2])
                 cropped_im = img[ny1:ny2+1,nx1:nx2+1,:]
-                resized_im = cv2.resize(cropped_im, (sizeOfNet[net], sizeOfNet[net]))
+                resized_im = cv2.resize(cropped_im, sizeOfNet[net])
                 #cal iou
                 iou = IoU(crop_box, np.expand_dims(gt_box,0))
                 if iou <= 0.65:
@@ -79,47 +84,47 @@ def gen_landmark_data(srcTxt, net, augment=False):
                 for index, one in enumerate(landmarkGt):
                     rv = ((one[0]-nx1)/bbox_size, (one[1]-ny1)/bbox_size)
                     landmark[index] = rv
-                F_landmarks.append(landmark.reshape(10))
-                landmark = np.zeros((5, 2))
+                F_landmarks.append(landmark.reshape(8))
+                landmark = np.zeros((4, 2))
                 landmark_ = F_landmarks[-1].reshape(-1,2)
                 bbox = BBox([nx1,ny1,nx2,ny2])                    
 
                 #mirror                    
                 if random.choice([0,1]) > 0:
                     face_flipped, landmark_flipped = flip(resized_im, landmark_)
-                    face_flipped = cv2.resize(face_flipped, (sizeOfNet[net], sizeOfNet[net]))
+                    face_flipped = cv2.resize(face_flipped, sizeOfNet[net])
                     #c*h*w
                     F_imgs.append(face_flipped)
-                    F_landmarks.append(landmark_flipped.reshape(10))
+                    F_landmarks.append(landmark_flipped.reshape(8))
                 #rotate
                 if random.choice([0,1]) > 0:
                     face_rotated_by_alpha, landmark_rotated = rotate(img, bbox, \
-                                                                     bbox.reprojectLandmark(landmark_), 5)#逆时针旋转
+                                                                     bbox.reprojectLandmark(landmark_), 4)#逆时针旋转
                     #landmark_offset
                     landmark_rotated = bbox.projectLandmark(landmark_rotated)
-                    face_rotated_by_alpha = cv2.resize(face_rotated_by_alpha, (sizeOfNet[net], sizeOfNet[net]))
+                    face_rotated_by_alpha = cv2.resize(face_rotated_by_alpha, sizeOfNet[net])
                     F_imgs.append(face_rotated_by_alpha)
-                    F_landmarks.append(landmark_rotated.reshape(10))
+                    F_landmarks.append(landmark_rotated.reshape(8))
                 
                     #flip
                     face_flipped, landmark_flipped = flip(face_rotated_by_alpha, landmark_rotated)
-                    face_flipped = cv2.resize(face_flipped, (sizeOfNet[net], sizeOfNet[net]))
+                    face_flipped = cv2.resize(face_flipped, sizeOfNet[net])
                     F_imgs.append(face_flipped)
-                    F_landmarks.append(landmark_flipped.reshape(10))                
+                    F_landmarks.append(landmark_flipped.reshape(8))                
                 
                 #inverse clockwise rotation
                 if random.choice([0,1]) > 0: 
                     face_rotated_by_alpha, landmark_rotated = rotate(img, bbox, \
-                                                                     bbox.reprojectLandmark(landmark_), -5)#顺时针旋转
+                                                                     bbox.reprojectLandmark(landmark_), -4)#顺时针旋转
                     landmark_rotated = bbox.projectLandmark(landmark_rotated)
                     face_rotated_by_alpha = cv2.resize(face_rotated_by_alpha, (sizeOfNet[net], sizeOfNet[net]))
                     F_imgs.append(face_rotated_by_alpha)
-                    F_landmarks.append(landmark_rotated.reshape(10))
+                    F_landmarks.append(landmark_rotated.reshape(8))
                 
                     face_flipped, landmark_flipped = flip(face_rotated_by_alpha, landmark_rotated)
                     face_flipped = cv2.resize(face_flipped, (sizeOfNet[net], sizeOfNet[net]))
                     F_imgs.append(face_flipped)
-                    F_landmarks.append(landmark_flipped.reshape(10)) 
+                    F_landmarks.append(landmark_flipped.reshape(8)) 
         F_imgs, F_landmarks = np.asarray(F_imgs), np.asarray(F_landmarks)
         for i in range(len(F_imgs)):
             path = os.path.join(saveImagesFolder, "%d.jpg"%(imageCnt))
@@ -147,5 +152,5 @@ if __name__ == "__main__":
     if stage not in ['pnet', 'rnet', 'onet']:
         raise Exception("Please specify stage by --stage=pnet or rnet or onet")
     # augment: data augmentation
-    gen_landmark_data("dataset/trainImageList.txt", stage, augment=True)
+    gen_landmark_data("/train-data/mtcnn_tf/dataset/labels.txt", stage, augment=False)
 
