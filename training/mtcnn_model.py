@@ -122,8 +122,8 @@ def P_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=T
                         padding='valid'):
         net = slim.conv2d(inputs, 10, 3, stride=1,scope='conv1')
         net = slim.max_pool2d(net, kernel_size=[2,2], stride=2, scope='pool1')
-        net = slim.conv2d(net, num_outputs=16, kernel_size=[3,3], stride=1, scope='conv2')
-        net = slim.conv2d(net, num_outputs=32, kernel_size=[3,3], stride=1, scope='conv3')
+        net = slim.conv2d(net, num_outputs=16, kernel_size=[3,6], stride=1, scope='conv2')
+        net = slim.conv2d(net, num_outputs=32, kernel_size=[3,6], stride=1, scope='conv3')
         #batch*H*W*2
         conv4_1 = slim.conv2d(net, num_outputs=2, kernel_size=[1,1], stride=1, scope='conv4_1', activation_fn=tf.nn.softmax)
         #batch*H*W*4

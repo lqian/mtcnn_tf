@@ -44,7 +44,7 @@ echo "Preparing R-Net tfrecord file"
 python prepare_data/gen_tfrecords.py --stage=rnet
 ### start to training R-Net
 echo "Start to training R-Net"
-python training/train.py --stage=rnet
+python training/train.py --stage=rnet --epoch 300
 
 # 4. stage: O-Net
 ### generate training data(Face Detection Part) for ONet
@@ -58,7 +58,7 @@ echo "Preparing O-Net tfrecord file"
 python prepare_data/gen_tfrecords.py --stage=onet
 ### start to training O-Net
 echo "Start to training O-Net"
-python training/train.py --stage=onet
+python training/train.py --stage=onet --epoch
 
 # 5. Done
 echo "Congratulation! All stages had been done. Now you can going to testing and hope you enjoy your result."

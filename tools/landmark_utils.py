@@ -50,15 +50,15 @@ def flip(face, landmark):
     face_flipped_by_x = cv2.flip(face, 1)
     #mirror
     landmark_ = np.asarray([(1-x, y) for (x, y) in landmark])
-    landmark_[[0, 1]] = landmark_[[1, 0]]#left eye<->right eye
-    landmark_[[3, 4]] = landmark_[[4, 3]]#left mouth<->right mouth
+    landmark_[[0, 1]] = landmark_[[1, 0]]  #left eye<->right eye
+    landmark_[[2, 3]] = landmark_[[3, 2]]  #left mouth<->right mouth
     return (face_flipped_by_x, landmark_)
 
 def randomShift(landmarkGt, shift):
     """
         Random Shift one time
     """
-    diff = np.random.rand(5, 2)
+    diff = np.random.rand(4, 2)
     diff = (2*diff - 1) * shift
     landmarkP = landmarkGt + diff
     return landmarkP
@@ -68,7 +68,7 @@ def randomShiftWithArgument(landmarkGt, shift):
         Random Shift more
     """
     N = 2
-    landmarkPs = np.zeros((N, 5, 2))
+    landmarkPs = np.zeros((N, 4, 2))
     for i in range(N):
         landmarkPs[i] = randomShift(landmarkGt, shift)
     return landmarkPs

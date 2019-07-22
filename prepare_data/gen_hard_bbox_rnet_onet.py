@@ -15,6 +15,7 @@ from tools.loader import TestLoader
 from detection.detector import Detector
 from detection.fcn_detector import FcnDetector
 from detection.MtcnnDetector import MtcnnDetector
+from training.mtcnn_config import config
 
 def read_wider_annotation(widerImagesPath, annoTxtPath):
     data = dict()
@@ -109,6 +110,7 @@ def __save_data(stage, data, save_path):
     # index of neg, pos and part face, used as their image names
     n_idx, p_idx, d_idx = 0, 0, 0
     total_idx = 0
+    image_size = tuple(config.CV_RESIZE_OF_NET[stage]) 
     for im_idx, dets, gts in zip(im_idx_list, det_boxes, gt_boxes_list):
         gts = np.array(gts, dtype=np.float32).reshape(-1, 4)
         if dets.shape[0] == 0:
@@ -129,8 +131,9 @@ def __save_data(stage, data, save_path):
             # compute intersection over union(IoU) between current box and all gt boxes
             Iou = IoU(box, gts)
             cropped_im = img[y_top:y_bottom + 1, x_left:x_right + 1, :]
-            image_size = (24,24) if stage == "rnet" else (48,48)
+#             image_size = (24,24) if stage == "rnet" else (48,48)
 #             image_size = (60,24) if stage == "rnet" else (120,48)
+           
             resized_im = cv2.resize(cropped_im, image_size,
                                     interpolation=cv2.INTER_LINEAR)
             # save negative images and write label
@@ -187,7 +190,7 @@ def test_net(batch_size, stage, thresh, min_face_size, stride):
         maxEpoch = max(map(int, a))
         modelPath = os.path.join(modelPath, "rnet-%d"%(maxEpoch))
         print("Use RNet model: %s"%(modelPath))
-        RNet = Detector(R_Net, 24, batch_size, modelPath)
+        RNet = Detector(R_Net, 'rnet', batch_size, modelPath)
         detectors[1] = RNet
     # read annatation(type:dict)
     #widerImagesPath = os.path.join(rootPath, "dataset", "WIDER_train", "images")

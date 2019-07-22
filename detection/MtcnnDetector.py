@@ -7,6 +7,7 @@ rootPath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__
 sys.path.insert(0, rootPath)
 from nms import py_nms
 from training.mtcnn_config import config
+from tools.common_utils import convert_to_square
 
 class MtcnnDetector(object):
     def __init__(self,
@@ -23,29 +24,29 @@ class MtcnnDetector(object):
         self.thresh = threshold
         self.scale_factor = scale_factor
 
-    def convert_to_square(self, bbox):
-        """
-            convert bbox to square
-        Parameters:
-        ----------
-            bbox: numpy array , shape n x 5
-                input bbox
-        Returns:
-        -------
-            square bbox
-        """
-        square_bbox = bbox.copy()
-
-        h = bbox[:, 3] - bbox[:, 1] + 1
-        w = bbox[:, 2] - bbox[:, 0] + 1
-#         max_side_w = w
-#         max_side_h = w * 12/30
-        max_side = np.maximum(h, w)
-        square_bbox[:, 0] = bbox[:, 0] + w * 0.5 - max_side * 0.5
-        square_bbox[:, 1] = bbox[:, 1] + h * 0.5 - max_side * 0.5
-        square_bbox[:, 2] = square_bbox[:, 0] + max_side - 1
-        square_bbox[:, 3] = square_bbox[:, 1] + max_side - 1
-        return square_bbox
+#     def convert_to_square(self, bbox):
+#         """
+#             convert bbox to square
+#         Parameters:
+#         ----------
+#             bbox: numpy array , shape n x 5
+#                 input bbox
+#         Returns:
+#         -------
+#             square bbox
+#         """
+#         square_bbox = bbox.copy()
+# 
+#         h = bbox[:, 3] - bbox[:, 1] + 1
+#         w = bbox[:, 2] - bbox[:, 0] + 1
+# #         max_side_w = w
+# #         max_side_h = w * 12/30
+#         max_side = np.maximum(h, w)
+#         square_bbox[:, 0] = bbox[:, 0] + w * 0.5 - max_side * 0.5
+#         square_bbox[:, 1] = bbox[:, 1] + h * 0.5 - max_side * 0.5
+#         square_bbox[:, 2] = square_bbox[:, 0] + max_side - 1
+#         square_bbox[:, 3] = square_bbox[:, 1] + max_side - 1
+#         return square_bbox
 
     def calibrate_box(self, bbox, reg):
         """
@@ -88,8 +89,10 @@ class MtcnnDetector(object):
         -------
             bbox array
         """
-        cell_height = 12
-        cell_width= 12
+        pnet_size = config.SIZE_OF_NET['pnet']
+        cell_height = pnet_size[0]
+        cell_width= pnet_size[1]
+        
         t_index = np.where(cls_map > threshold)
         # find nothing
         if t_index[0].size == 0:
@@ -176,14 +179,14 @@ class MtcnnDetector(object):
             boxes after calibration
         """
         h, w, c = im.shape
-        net_size = 12
+        net_size = config.SIZE_OF_NET['pnet']
         
-        current_scale = float(net_size) / self.min_face_size  # find initial scale
+        current_scale = max(net_size) * 1.0 / self.min_face_size  # find initial scale
         im_resized = self.processed_image(im, current_scale)
         current_height, current_width, _ = im_resized.shape
         # for fcn
         all_boxes = list()
-        while min(current_height, current_width) > 30:
+        while min(current_height, current_width) > max(net_size):
             #return the result predicted by pnet
             #cls_cls_map : H*w*2
             #reg: H*w*4
@@ -236,20 +239,23 @@ class MtcnnDetector(object):
             boxes after calibration
         """
         h, w, c = im.shape
-        dets = self.convert_to_square(dets)
+        dets = convert_to_square(dets)
         dets[:, 0:4] = np.round(dets[:, 0:4])
-
+        net_size = config.SIZE_OF_NET['rnet']
+        cv_size = tuple(config.CV_RESIZE_OF_NET['rnet']);
         [dy, edy, dx, edx, y, ey, x, ex, tmpw, tmph] = self.pad(dets, w, h)
         num_boxes = dets.shape[0]
-        cropped_ims = np.zeros((num_boxes, 24, 24, 3), dtype=np.float32)
+        cropped_ims = np.zeros((num_boxes, net_size[0], net_size[1], 3), dtype=np.float32)
         for i in range(num_boxes):
 #             print('tmp h {} tmp w {}'.format(tmph[i], tmpw[i]))
-            if  tmph[i]>0 and tmpw[i]>0 :
+            if  tmph[i]>0 and tmpw[i]>0 and ex[i] - x[i] > 0:
                 tmp = np.zeros((tmph[i], tmpw[i], 3), dtype=np.uint8)
+                ## todo could not broadcast input array from shape (77,0,3) into shape (77,65,3)
                 tmp[dy[i]:edy[i] + 1, dx[i]:edx[i] + 1, :] = im[y[i]:ey[i] + 1, x[i]:ex[i] + 1, :]
-                cropped_ims[i, :, :, :] = (cv2.resize(tmp, (24, 24))-127.5) / 128
+                cropped_ims[i, :, :, :] = (cv2.resize(tmp, cv_size)-127.5) / 128
             else:
-                cropped_ims[i, :, :, :] = np.zeros((24, 24, 3), dtype=np.float32);    
+                print("exception values: ", dy[i], edy[i], dx[i], edx[i], y[i], ey[i], x[i], ex[i], tmpw[i], tmph[i])
+#                 cropped_ims[i, :, :, :] = np.zeros((net_size[0], net_size[1], 3), dtype=np.float32);    
         #cls_scores : num_data*2
         #reg: num_data*4
         #landmark: num_data*10
@@ -284,18 +290,20 @@ class MtcnnDetector(object):
         boxes_c: numpy array
             boxes after calibration
         """
+        net_size = config.SIZE_OF_NET['onet']
+        cv_size = tuple(config.CV_RESIZE_OF_NET['onet']);
         h, w, c = im.shape
-        dets = self.convert_to_square(dets)
+        dets = convert_to_square(dets)
         dets[:, 0:4] = np.round(dets[:, 0:4])
         [dy, edy, dx, edx, y, ey, x, ex, tmpw, tmph] = self.pad(dets, w, h)
         num_boxes = dets.shape[0]
-        cropped_ims = np.zeros((num_boxes, 48, 48, 3), dtype=np.float32)
+        cropped_ims = np.zeros((num_boxes, net_size[0], net_size[1], 3), dtype=np.float32)
         for i in range(num_boxes):
             tmp = np.zeros((tmph[i], tmpw[i], 3), dtype=np.uint8)
             tmp[dy[i]:edy[i] + 1, dx[i]:edx[i] + 1, :] = im[y[i]:ey[i] + 1, x[i]:ex[i] + 1, :]
-            cv2.imshow('corp_ims', tmp)
-            cv2.waitKey(0)
-            cropped_ims[i, :, :, :] = (cv2.resize(tmp, (48, 48))-127.5) / 128
+#             cv2.imshow('corp_ims', tmp)
+#             cv2.waitKey(0)
+            cropped_ims[i, :, :, :] = (cv2.resize(tmp, cv_size) -127.5) / 128
         cls_scores, reg,landmark = self.onet_detector.predict(cropped_ims)
         #prob belongs to face
         cls_scores = cls_scores[:,1]        

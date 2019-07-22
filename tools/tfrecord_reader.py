@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 import cv2
 import os
+from training.mtcnn_config import config
 
 # for PNet
 def read_single_tfrecord(tfrecord_file, batch_size, net):
@@ -22,17 +23,13 @@ def read_single_tfrecord(tfrecord_file, batch_size, net):
         }
     )
     
-    if net == 'pnet':
-        image_size = 12
-    elif net == 'rnet':
-        image_size = 24
-    elif net == 'onet':
-        image_size = 48
+    if net in config.SIZE_OF_NET:
+        image_size = config.SIZE_OF_NET[net]
     else:
         raise Exception("Unsupport your net type!")
     image = tf.decode_raw(image_features['image/encoded'], tf.uint8)
 #     image = tf.reshape(image, [image_size, 30*image_size/12, 3])
-    image = tf.reshape(image, [image_size, image_size, 3])
+    image = tf.reshape(image, [image_size[0], image_size[1], 3])
     image = (tf.cast(image, tf.float32)-127.5) / 128
 
     label = tf.cast(image_features['image/label'], tf.float32)

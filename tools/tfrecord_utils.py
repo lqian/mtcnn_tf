@@ -184,6 +184,7 @@ def _process_image_withoutcoder(filename):
     height = image.shape[0]
     width = image.shape[1]
     assert image.shape[2] == 3
+#     image = (tf.cast(image, tf.float32)-127.5) / 128
     return image_data, height, width
 
 

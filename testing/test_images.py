@@ -15,6 +15,7 @@ import cv2
 import argparse
 
 def test(stage, testFolder):
+#     maxEpoch = 100
     print("Start testing in %s"%(testFolder))
     detectors = [None, None, None]
     if stage in ['pnet', 'rnet', 'onet']:
@@ -30,15 +31,15 @@ def test(stage, testFolder):
         maxEpoch = max(map(int, a))
         modelPath = os.path.join(modelPath, "rnet-%d"%(maxEpoch))
         print("Use RNet model: %s"%(modelPath))
-        detectors[1] = Detector(R_Net, 24, 1, modelPath)
+        detectors[1] = Detector(R_Net, 'rnet', 1, modelPath)
     if stage in ['onet']:
         modelPath = os.path.join(config.ROOT_PATH, 'tmp/model/onet/')
         a = [b[5:-6] for b in os.listdir(modelPath) if b.startswith('onet-') and b.endswith('.index')]
         maxEpoch = max(map(int, a))
         modelPath = os.path.join(modelPath, "onet-%d"%(maxEpoch))
         print("Use ONet model: %s"%(modelPath))
-        detectors[2] = Detector(O_Net, 48, 1, modelPath)
-    mtcnnDetector = MtcnnDetector(detectors=detectors, min_face_size = 24, threshold=[0.90, 0.6, 0.2])
+        detectors[2] = Detector(O_Net, 'onet', 1, modelPath)
+    mtcnnDetector = MtcnnDetector(detectors=detectors, min_face_size = 24, threshold=[0.60, 0.6, 0.5])
 
     testImages = []
     for name in os.listdir(testFolder):
@@ -61,7 +62,7 @@ def test(stage, testFolder):
         savePath = os.path.join(rootPath, 'testing', 'results_%s'%(stage))
         if not os.path.isdir(savePath):
             os.makedirs(savePath)
-        cv2.imwrite(os.path.join(savePath, "result_%d.jpg" %(idx)), image)
+        cv2.imwrite(os.path.join(savePath, "%s_result_%d.jpg" %(stage, idx)), image)
         print("Save image to %s"%(savePath))
 
 def parse_args():

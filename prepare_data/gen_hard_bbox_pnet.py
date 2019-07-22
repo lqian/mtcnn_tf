@@ -6,9 +6,11 @@ import os
 rootPath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../"))
 sys.path.insert(0, rootPath)
 from tools.common_utils import IoU
+from training.mtcnn_config import config
 
 
-net_size=(12, 12)
+net_size=tuple(config.CV_RESIZE_OF_NET['pnet'])
+print('pnet input size:', net_size)
 
 def gen_hard_bbox_pnet(srcAnnotations):
 #     srcDataSet = os.path.join(rootPath, srcDataSet)

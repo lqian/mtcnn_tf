@@ -85,16 +85,16 @@ def train(netFactory, modelPrefix, endEpoch, dataPath, display=200, baseLr=0.01,
         total_num = 0
         for d in dataset_dirs:
             total_num += sum(1 for _ in tf.python_io.tf_record_iterator(d))
+            
+            
     #ratio 
+    image_size = config.SIZE_OF_NET[net]
     if net == 'pnet':
-        image_size = [12, 12]
         ratio_cls_loss, ratio_bbox_loss, ratio_landmark_loss = 1.0, 0.5, 0.5
     elif net == 'rnet':
-        image_size = [24, 24]
         ratio_cls_loss, ratio_bbox_loss, ratio_landmark_loss = 1.0, 0.5, 1.0
     elif net == 'onet':
         ratio_cls_loss, ratio_bbox_loss, ratio_landmark_loss = 1.0, 0.5, 1.0
-        image_size = [48, 48]
     else:
         raise Exception("incorrect net type.")
     #define placeholder
@@ -181,7 +181,7 @@ def parse_args():
     parser.add_argument('--gpus', dest='gpus', help='specify gpu to run. eg: --gpus=0,1',
                         default='0', type=str)
     parser.add_argument('--epoch', dest='epoch', help='total epoch to training',
-                        default=300, type=int)
+                        default=100, type=int)
     parser.add_argument('--display', dest='display', help='how much step to display',
                         default=100, type=int)
     parser.add_argument('--lr', dest='lr', help='base learning rate',
