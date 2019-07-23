@@ -39,7 +39,7 @@ def test(stage, testFolder):
         modelPath = os.path.join(modelPath, "onet-%d"%(maxEpoch))
         print("Use ONet model: %s"%(modelPath))
         detectors[2] = Detector(O_Net, 'onet', 1, modelPath)
-    mtcnnDetector = MtcnnDetector(detectors=detectors, min_face_size = 24, threshold=[0.60, 0.6, 0.5])
+    mtcnnDetector = MtcnnDetector(detectors=detectors, min_face_size = 24, threshold=[0.92, 0.7, 0.7])
 
     testImages = []
     for name in os.listdir(testFolder):

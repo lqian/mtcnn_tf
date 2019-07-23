@@ -39,6 +39,11 @@ def gen_landmark_data(srcTxt, net, augment=False):
             print("ignore sample: ", imgPath)
             continue
             
+#         img = cv2.imread(imgPath)
+	if not exists(imgPath) :
+	    print("not exists file:", imgPath)
+            continue
+
         img = cv2.imread(imgPath)
         assert(img is not None)
         img_h, img_w, img_c = img.shape
@@ -64,14 +69,16 @@ def gen_landmark_data(srcTxt, net, augment=False):
                 continue
             #random shift
             for i in range(10):
-                bbox_size = np.random.randint(int(min(gt_w, gt_h) * 0.8), np.ceil(1.25 * max(gt_w, gt_h)))
+                bbox_size_w = np.random.randint(int(gt_w * 0.8), np.ceil(1.25 * gt_w))
+                bbox_size_h = np.random.randint(int(gt_h * 0.8), np.ceil(1.25 * gt_h))
+#                 bbox_size = np.random.randint(int(min(gt_w, gt_h) * 0.8), np.ceil(1.25 * max(gt_w, gt_h)))
                 delta_x = np.random.randint(-gt_w * 0.2, gt_w * 0.2)
                 delta_y = np.random.randint(-gt_h * 0.2, gt_h * 0.2)
-                nx1 = max(x1+gt_w/2-bbox_size/2+delta_x,0)
-                ny1 = max(y1+gt_h/2-bbox_size/2+delta_y,0)
+                nx1 = int(max(x1+gt_w/2-bbox_size_w/2+delta_x,0))
+                ny1 = int(max(y1+gt_h/2-bbox_size_h/2+delta_y,0))
                 
-                nx2 = nx1 + bbox_size
-                ny2 = ny1 + bbox_size
+                nx2 = int(nx1 + bbox_size_w)
+                ny2 = int(ny1 + bbox_size_h)
                 if nx2 > img_w or ny2 > img_h:
                     continue
                 crop_box = np.array([nx1,ny1,nx2,ny2])
@@ -84,7 +91,7 @@ def gen_landmark_data(srcTxt, net, augment=False):
                 F_imgs.append(resized_im)
                 #normalize
                 for index, one in enumerate(landmarkGt):
-                    rv = ((one[0]-nx1)/bbox_size, (one[1]-ny1)/bbox_size)
+                    rv = ((one[0]-nx1)/bbox_size_w, (one[1]-ny1)/ bbox_size_h)
                     landmark[index] = rv
                 F_landmarks.append(landmark.reshape(8))
                 landmark = np.zeros((4, 2))
@@ -140,7 +147,7 @@ def gen_landmark_data(srcTxt, net, augment=False):
         sys.stdout.write(printStr)
         sys.stdout.flush()
     saveF.close()
-    print "\nLandmark create done!"
+    print ("\nLandmark create done!")
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Create hard bbox sample...',
@@ -156,5 +163,5 @@ if __name__ == "__main__":
     if stage not in ['pnet', 'rnet', 'onet']:
         raise Exception("Please specify stage by --stage=pnet or rnet or onet")
     # augment: data augmentation
-    gen_landmark_data("/train-data/mtcnn_tf/dataset/labels.txt", stage, augment=True)
+    gen_landmark_data("dataset/labels.txt", stage, augment=True)
 

@@ -219,6 +219,7 @@ class MtcnnDetector(object):
                              all_boxes[:, 3] + all_boxes[:, 8] * bbh,
                              all_boxes[:, 4]])
         boxes_c = boxes_c.T
+        print("proposal boxes numbers: ", len(boxes))
         return boxes, boxes_c, None
 
     def detect_rnet(self, im, dets):

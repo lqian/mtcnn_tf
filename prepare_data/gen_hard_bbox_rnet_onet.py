@@ -55,8 +55,8 @@ def read_labels_annotation(annoTxtPath):
         lines = f.readlines()
         for line in lines:                        
             annotations = line.strip().split(' ')
-            if len(annotations) == 1:                
-                print("ignorre empty annotations sample: ", annotations[0])
+            if len(annotations) == 1 or  not os.path.exists(annotations[0]) :                
+                print("ignorre empty annotations sample or not exists sample: ", annotations[0])
                 continue
             images.append(annotations[0])
             one_image_boxes = np.array(annotations[1:], dtype=np.float32).reshape(-1, 12)[:, 0:4]

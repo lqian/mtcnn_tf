@@ -40,9 +40,15 @@ def gen_hard_bbox_pnet(srcAnnotations):
         boxes = np.array(annotation[1:], dtype=np.float32).reshape(-1, 12)[:, 0:4]
         #load image
         img = cv2.imread(os.path.join(imPath))
+        if (img is None):
+            print("not found: ", imPath)
+            continue
+        
         idx += 1
         height, width, channel = img.shape
-
+#         for box in boxes:
+#             cv2.rectangle(img, (box[0], box[1]), (box[2], box[3]), (255, 20, 20), 2)
+       
         # 1. NEG: random to crop negative sample image
         negNum = 0
         while negNum < 50:
@@ -101,17 +107,26 @@ def gen_hard_bbox_pnet(srcAnnotations):
             # 3. POS and PART
             for i in range(20):
                 # pos and part face size [minsize*0.8,maxsize*1.25]
+#                 size = np.random.randint(int(min(w, h) * 0.8), np.ceil(1.25 * max(w, h)))
+#                 # delta here is the offset of box center
+#                 delta_x = np.random.randint(-w * 0.2, w * 0.2)
+#                 delta_y = np.random.randint(-h * 0.2, h * 0.2)
+                # pos and part face size [minsize*0.9,maxsize*1.1]
                 size = np.random.randint(int(min(w, h) * 0.8), np.ceil(1.25 * max(w, h)))
+                size_w = np.random.randint(int(w* .8), int(w * 1.25))
+                size_h = np.random.randint(int(h* .8), int(h * 1.25))
                 # delta here is the offset of box center
-                delta_x = np.random.randint(-w * 0.2, w * 0.2)
-                delta_y = np.random.randint(-h * 0.2, h * 0.2)
+                delta_x = np.random.randint(-w * 0.1, w * 0.1)
+                delta_y = np.random.randint(-h * 0.1, h * 0.1)
+                
                 #show this way: nx1 = max(x1+w/2-size/2+delta_x)
                 nx1 = max(x1 + w / 2 + delta_x - size / 2, 0)
                 #show this way: ny1 = max(y1+h/2-size/2+delta_y)
                 ny1 = max(y1 + h / 2 + delta_y - size / 2, 0)
-                nx2 = nx1 + size
-                ny2 = ny1 + size
-
+                nx2 = nx1 + size_w
+                ny2 = ny1 + size_h
+                
+                
                 if nx2 > width or ny2 > height:
                     continue 
                 crop_box = np.array([nx1, ny1, nx2, ny2])
@@ -126,12 +141,16 @@ def gen_hard_bbox_pnet(srcAnnotations):
                 resized_im = cv2.resize(cropped_im, net_size, interpolation=cv2.INTER_LINEAR)
 
                 box_ = box.reshape(1, -1)
-                if IoU(crop_box, box_) >= 0.65:
+                iou = IoU(crop_box, box_)
+#                 cv2.rectangle(img, (int(nx1), int(ny1)), (int(nx2), int(ny2)), (20,255,20), 3)
+#                 cv2.imshow('img', img)
+#                 cv2.waitKey(300)
+                if iou >= 0.65:
                     save_file = os.path.join(saveFolder, "pos", "%s.jpg"%pIdx)
                     saveFiles['pos'].write(save_file + ' 1 %.2f %.2f %.2f %.2f\n'%(offset_x1, offset_y1, offset_x2, offset_y2))
                     cv2.imwrite(save_file, resized_im)
                     pIdx += 1
-                elif IoU(crop_box, box_) >= 0.4:
+                elif iou >= 0.4:
                     save_file = os.path.join(saveFolder, "part", "%s.jpg"%dIdx)
                     saveFiles['part'].write(save_file + ' -1 %.2f %.2f %.2f %.2f\n'%(offset_x1, offset_y1, offset_x2, offset_y2))
                     cv2.imwrite(save_file, resized_im)
@@ -141,8 +160,8 @@ def gen_hard_bbox_pnet(srcAnnotations):
         sys.stdout.flush()
     for f in saveFiles.values():
         f.close()
-    print '\n'
+    print ('\n')
 
 
 if __name__ == "__main__":
-    gen_hard_bbox_pnet("/train-data/mtcnn_tf/dataset/labels.txt")
+    gen_hard_bbox_pnet("dataset/labels.txt")
