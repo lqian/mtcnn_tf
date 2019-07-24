@@ -40,6 +40,11 @@ def gen_landmark_data(srcTxt, net, augment=False):
             print("ignore sample: ", imgPath)
             continue
             
+#         img = cv2.imread(imgPath)
+	if not exists(imgPath) :
+	    print("not exists file:", imgPath)
+            continue
+
         img = cv2.imread(imgPath)
         if img is None:
             print('not found img: ', img)
@@ -71,7 +76,6 @@ def gen_landmark_data(srcTxt, net, augment=False):
             gt_h = y2 - y1 + 1        
             if max(gt_w, gt_h) < 40 or x1 < 0 or y1 < 0:
                 continue
-            
             #random shift 
             tan1 = abs((landmarkGt[1][1] - landmarkGt[0][1]) / (landmarkGt[1][0] - landmarkGt[0][0]))
             tan2 = abs((landmarkGt[3][1] - landmarkGt[2][1]) / (landmarkGt[3][0] - landmarkGt[2][0])) 
