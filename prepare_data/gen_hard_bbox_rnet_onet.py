@@ -171,24 +171,24 @@ def __save_data(stage, data, save_path):
         sys.stdout.flush()
     for f in saveFiles.values():
         f.close()
-    print ('\n')
+    print '\n'
 
-def test_net(batch_size, stage, thresh, min_face_size, stride):
+def test_net(batch_size, stage, thresh, min_face_size, stride, epoch):
     print(">>>>>> Detect bbox for %s..."%(stage))
     detectors = [None, None, None]
     if stage in ["rnet", "onet"]:
         modelPath = os.path.join(config.ROOT_PATH, 'tmp/model/pnet/')
         a = [b[5:-6] for b in os.listdir(modelPath) if b.startswith('pnet-') and b.endswith('.index')]
-        maxEpoch = max(map(int, a))
-        modelPath = os.path.join(modelPath, "pnet-%d"%(maxEpoch))
+        #epoch = max(map(int, a))
+        modelPath = os.path.join(modelPath, "pnet-%d"%(epoch))
         print("Use PNet model: %s"%(modelPath))
         PNet = FcnDetector(P_Net, modelPath)
         detectors[0] = PNet
     if stage in ["onet"]:
         modelPath = os.path.join(config.ROOT_PATH, 'tmp/model/rnet/')
         a = [b[5:-6] for b in os.listdir(modelPath) if b.startswith('rnet-') and b.endswith('.index')]
-        maxEpoch = max(map(int, a))
-        modelPath = os.path.join(modelPath, "rnet-%d"%(maxEpoch))
+        #epoch = max(map(int, a))
+        modelPath = os.path.join(modelPath, "rnet-%d"%(epoch))
         print("Use RNet model: %s"%(modelPath))
         RNet = Detector(R_Net, 'rnet', batch_size, modelPath)
         detectors[1] = RNet
@@ -220,6 +220,7 @@ def parse_args():
                         default='unknow', type=str)
     parser.add_argument('--gpus', dest='gpus', help='specify gpu to run. eg: --gpus=0,1',
                         default='0', type=str)
+    parser.add_argument('--epoch', dest='epoch', type=int, default=30, help='restore the epoch of checkpoint to prepare data')
     args = parser.parse_args()
     return args
 
@@ -247,4 +248,4 @@ if __name__ == '__main__':
           stage, # can be 'rnet' or 'onet'
           threshold, #cls threshold
           minFace, #min_face
-          stride)
+          stride, args.epoch)

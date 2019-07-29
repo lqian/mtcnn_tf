@@ -146,9 +146,9 @@ def P_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=T
             return cls_loss, bbox_loss, landmark_loss, L2_loss, accuracy 
         else: # testing
             #when test, batch_size = 1
-            cls_pro_test = tf.squeeze(conv4_1, axis=0)
-            bbox_pred_test = tf.squeeze(bbox_pred, axis=0)
-            landmark_pred_test = tf.squeeze(landmark_pred, axis=0)
+            cls_pro_test = tf.squeeze(conv4_1, axis=0, name='cls_prob')
+            bbox_pred_test = tf.squeeze(bbox_pred, axis=0, name='bbox_pred')
+            landmark_pred_test = tf.squeeze(landmark_pred, axis=0, name='landmark_pred')
             return cls_pro_test, bbox_pred_test, landmark_pred_test
         
 def R_Net(inputs,label=None, bbox_target=None, landmark_target=None, training=True):
@@ -159,7 +159,7 @@ def R_Net(inputs,label=None, bbox_target=None, landmark_target=None, training=Tr
                         weights_regularizer=slim.l2_regularizer(0.0005),                        
                         padding='valid'):
         net = slim.conv2d(inputs, num_outputs=28, kernel_size=[3,3], stride=1, scope="conv1")
-        net = slim.max_pool2d(net, kernel_size=[2,2],stride=2,scope="pool1")
+        net = slim.max_pool2d(net, kernel_size=[3,3],stride=2,scope="pool1")
         net = slim.conv2d(net,num_outputs=48,kernel_size=[3,3],stride=1,scope="conv2")
         net = slim.max_pool2d(net,kernel_size=[3,3],stride=2,scope="pool2")
         net = slim.conv2d(net,num_outputs=64,kernel_size=[2,2],stride=1,scope="conv3")
@@ -190,12 +190,12 @@ def O_Net(inputs,label=None,bbox_target=None,landmark_target=None,training=True)
                         weights_regularizer=slim.l2_regularizer(0.0005),                        
                         padding='valid'):
         net = slim.conv2d(inputs, num_outputs=32, kernel_size=[3,3], stride=1, scope="conv1")
-        net = slim.max_pool2d(net, kernel_size=[2,2],stride=2,scope="pool1")
+        net = slim.max_pool2d(net, kernel_size=[3,3],stride=2,scope="pool1")
         net = slim.conv2d(net,num_outputs=64,kernel_size=[3,3],stride=1,scope="conv2")
-        net = slim.max_pool2d(net,kernel_size=[2,2],stride=2,scope="pool2")
+        net = slim.max_pool2d(net,kernel_size=[3,3],stride=2,scope="pool2")
         net = slim.conv2d(net,num_outputs=64,kernel_size=[3,3],stride=1,scope="conv3")
-        net = slim.max_pool2d(net,kernel_size=[2,2],stride=2,scope="pool3")
-        net = slim.conv2d(net,num_outputs=128,kernel_size=[2,2],stride=1,scope="conv4")
+        net = slim.max_pool2d(net,kernel_size=[3,3],stride=2,scope="pool3")
+        net = slim.conv2d(net,num_outputs=128,kernel_size=[3,3],stride=1,scope="conv4")
         fc_flatten = slim.flatten(net)
         fc1 = slim.fully_connected(fc_flatten, num_outputs=256,scope="fc1")
         #batch*2

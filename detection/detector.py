@@ -1,11 +1,17 @@
 import tensorflow as tf
 import numpy as np
 from training.mtcnn_config import config
+from tensorflow.python.framework import graph_util
+
+net_name_dict = {'pnet':['conv4_1/Softmax', 'conv4_2/BiasAdd'], 
+                'rnet':['cls_fc/Softmax', 'bbox_fc/BiasAdd'], 
+                'onet':['cls_fc/Softmax', 'bbox_fc/BiasAdd', 'landmark_fc/BiasAdd']}
+
 
 class Detector(object):
     #net_factory:rnet or onet
     #datasize:24 or 48
-    def __init__(self, net_factory, net, batch_size, model_path):
+    def __init__(self, net_factory, net, batch_size, model_path, export=False):
         self.net_size = config.SIZE_OF_NET[net]
         graph = tf.Graph()
         with graph.as_default():
@@ -22,7 +28,21 @@ class Detector(object):
             assert  readstate, "the params dictionary is not valid"
             print("Restore param from: ", model_path)
             saver.restore(self.sess, model_path)                        
-
+        
+        ##
+        if export:
+            for op in graph.get_operations():
+                print(op.name, op.values())
+            print('export pb:', net)
+            input_graph_def = graph.as_graph_def()
+            output_graph_def = graph_util.convert_variables_to_constants(   
+                sess=self.sess,
+                input_graph_def=input_graph_def, 
+                output_node_names=net_name_dict[net]) 
+            with tf.gfile.GFile(net +'.pb', "wb") as f:  
+                f.write(output_graph_def.SerializeToString()) 
+            print("%d ops in the final graph." % len(output_graph_def.node)) 
+                    
 #         self.data_size = data_size
         self.batch_size = batch_size
     #rnet and onet minibatch(test)

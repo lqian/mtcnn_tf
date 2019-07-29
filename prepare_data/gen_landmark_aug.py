@@ -30,7 +30,6 @@ def gen_landmark_data(srcTxt, net, augment=False):
         os.makedirs(saveImagesFolder)
     saveF = open(join(saveFolder, "landmark.txt"), 'w')
     imageCnt = 0
-    augmentCnt = 0
     cv_size = tuple(config.CV_RESIZE_OF_NET[net])
     # image_path bbox landmark(5*2)
     for (imgPath, bbox, landmarkGt) in getBboxLandmarkFromTxt(srcTxt):
@@ -46,28 +45,20 @@ def gen_landmark_data(srcTxt, net, augment=False):
             continue
 
         img = cv2.imread(imgPath)
-        if img is None:
-            print('not found img: ', img)
-            continue
         assert(img is not None)
         img_h, img_w, img_c = img.shape
-        imageCnt += 1
         gt_box = np.array([bbox.left, bbox.top, bbox.right, bbox.bottom])
         f_face = img[bbox.top: bbox.bottom+1, bbox.left: bbox.right+1]
-#         cv2.imshow('corp_face', f_face)
-#         cv2.waitKey(300)
         f_face = cv2.resize(f_face, cv_size)
         landmark = np.zeros((4, 2))        
         #normalize with bbox x, y, w, h
-        
         for index, one in enumerate(landmarkGt):
 #             rv = ((one[0]-gt_box[0])/(gt_box[2]-gt_box[0]), (one[1]-gt_box[1])/(gt_box[3]-gt_box[1]))
             rv = ((one[0] - bbox.x)/bbox.w, (one[1] - bbox.y)/bbox.h)
             landmark[index] = rv
         F_imgs.append(f_face)
-        F_landmarks.append(landmark.reshape(8))  ## add the ground truth end
-        
-                
+        F_landmarks.append(landmark.reshape(8))
+        landmark = np.zeros((4, 2))        
         if augment:
             x1, y1, x2, y2 = gt_box
             #gt's width
@@ -76,29 +67,8 @@ def gen_landmark_data(srcTxt, net, augment=False):
             gt_h = y2 - y1 + 1        
             if max(gt_w, gt_h) < 40 or x1 < 0 or y1 < 0:
                 continue
-            #random shift 
-            tan1 = abs((landmarkGt[1][1] - landmarkGt[0][1]) / (landmarkGt[1][0] - landmarkGt[0][0]))
-            tan2 = abs((landmarkGt[3][1] - landmarkGt[2][1]) / (landmarkGt[3][0] - landmarkGt[2][0])) 
-            angle = math.atan((tan1 + tan2) / 2) * 180 / math.pi 
-#            alpha = math.sqrt(1+alpha) * 180 / math.pi 
-            if angle >= 28 :
-                print("no rotate for samples: ", imgPath)
-                continue
-                
-            #random  -30 ~ 30
-            alphas = []
-            alphas.append(np.random.randint(30 - angle, size=6))
-            alphas.append(0 - np.random.randint(30 - angle, size=6))
-            alphas = np.asarray(alphas, dtype= np.int32).reshape(12)
-                   
-            for r_alpha in alphas: 
-                img_rotated_by_alpha, rotated_bbox, landmark_rotated = rotate(img,  landmarkGt, r_alpha) 
-                if img_rotated_by_alpha is  None:
-                    continue
-                
-                x1, y1, x2, y2 = rotated_bbox
-                gt_w =  x2 - x1
-                gt_h = y2 - y1
+            #random shift
+            for i in range(10):
                 bbox_size_w = np.random.randint(int(gt_w * 0.8), np.ceil(1.25 * gt_w))
                 bbox_size_h = np.random.randint(int(gt_h * 0.8), np.ceil(1.25 * gt_h))
 #                 bbox_size = np.random.randint(int(min(gt_w, gt_h) * 0.8), np.ceil(1.25 * max(gt_w, gt_h)))
@@ -112,31 +82,68 @@ def gen_landmark_data(srcTxt, net, augment=False):
                 if nx2 > img_w or ny2 > img_h:
                     continue
                 crop_box = np.array([nx1,ny1,nx2,ny2])
-                
-#                     cv2.imshow('random cropped_im', cropped_im)
-#                     cv2.waitKey(0)
-                    #cal iou
-                iou = IoU(crop_box, np.expand_dims(rotated_bbox,0))
+                cropped_im = img[ny1:ny2+1,nx1:nx2+1,:]
+                resized_im = cv2.resize(cropped_im, cv_size)
+                #cal iou
+                iou = IoU(crop_box, np.expand_dims(gt_box,0))
                 if iou <= 0.65:
                     continue
-                cropped_im = img_rotated_by_alpha[ny1:ny2+1,nx1:nx2+1,:] 
-                resized_im = cv2.resize(cropped_im, cv_size)
                 F_imgs.append(resized_im)
                 #normalize
-                landmark = np.zeros((4, 2))
-                for index, one in enumerate(landmark_rotated):
+                for index, one in enumerate(landmarkGt):
                     rv = ((one[0]-nx1)/bbox_size_w, (one[1]-ny1)/ bbox_size_h)
                     landmark[index] = rv
-                F_landmarks.append(landmark.reshape(8)) 
+                F_landmarks.append(landmark.reshape(8))
+                landmark = np.zeros((4, 2))
+                landmark_ = F_landmarks[-1].reshape(-1,2)
+                bbox = BBox([nx1,ny1,nx2,ny2])                    
+
+                #mirror                    
+                if random.choice([0,1]) > 0:
+                    face_flipped, landmark_flipped = flip(resized_im, landmark_)
+                    face_flipped = cv2.resize(face_flipped, cv_size)
+                    #c*h*w
+                    F_imgs.append(face_flipped)
+                    F_landmarks.append(landmark_flipped.reshape(8))
+                #rotate
+                if random.choice([0,1]) > 0:
+                    face_rotated_by_alpha, landmark_rotated = rotate(img, bbox, \
+                                                                     bbox.reprojectLandmark(landmark_), 4)#逆时针旋转
+                    #landmark_offset
+                    landmark_rotated = bbox.projectLandmark(landmark_rotated)
+                    face_rotated_by_alpha = cv2.resize(face_rotated_by_alpha, cv_size)
+                    F_imgs.append(face_rotated_by_alpha)
+                    F_landmarks.append(landmark_rotated.reshape(8))
                 
+                    #flip
+                    face_flipped, landmark_flipped = flip(face_rotated_by_alpha, landmark_rotated)
+#                     show_landmark(face_flipped, landmark_flipped)
+                    face_flipped = cv2.resize(face_flipped, cv_size)
+                    
+                    F_imgs.append(face_flipped)
+                    F_landmarks.append(landmark_flipped.reshape(8))                
+                
+                #inverse clockwise rotation
+                if random.choice([0,1]) > 0: 
+                    face_rotated_by_alpha, landmark_rotated = rotate(img, bbox, \
+                                                                     bbox.reprojectLandmark(landmark_), -4)#顺时针旋转
+                    landmark_rotated = bbox.projectLandmark(landmark_rotated)
+                    face_rotated_by_alpha = cv2.resize(face_rotated_by_alpha, cv_size)
+                    F_imgs.append(face_rotated_by_alpha)
+                    F_landmarks.append(landmark_rotated.reshape(8))
+                
+                    face_flipped, landmark_flipped = flip(face_rotated_by_alpha, landmark_rotated)
+                    face_flipped = cv2.resize(face_flipped, cv_size);
+                    F_imgs.append(face_flipped)
+                    F_landmarks.append(landmark_flipped.reshape(8)) 
         F_imgs, F_landmarks = np.asarray(F_imgs), np.asarray(F_landmarks)
         for i in range(len(F_imgs)):
-            path = os.path.join(saveImagesFolder, "%d.jpg"%(augmentCnt))
+            path = os.path.join(saveImagesFolder, "%d.jpg"%(imageCnt))
             cv2.imwrite(path, F_imgs[i])
             landmarks = map(str, list(F_landmarks[i]))
-            saveF.write(path + " -2 " + " ".join(landmarks)+"\n") 
-            augmentCnt += 1 
-        printStr = "Count: {} augments:{}\n".format(imageCnt, augmentCnt)
+            saveF.write(path + " -2 " + " ".join(landmarks)+"\n")
+            imageCnt += 1
+        printStr = "\rCount: {}".format(imageCnt)
         sys.stdout.write(printStr)
         sys.stdout.flush()
     saveF.close()

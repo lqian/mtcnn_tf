@@ -6,7 +6,7 @@
 import os
 import cv2
 import numpy as np
-from tools.common_utils import BBox
+
 
 def show_landmark(face, landmark):
     """
@@ -26,40 +26,21 @@ def show_landmark(face, landmark):
 #BBox:object
 #landmark:
 #alpha:angle
-def rotate(img, landmark, alpha):
+def rotate(img, bbox, landmark, alpha):
     """
         given a face with bbox and landmark, rotate with alpha
         and return rotated face with bbox, landmark (absolute position)
-        alpha 角度，如90
     """
-#     center = ((bbox.left+bbox.right)/2, (bbox.top+bbox.bottom)/2)
-    cx = int(np.average(landmark[0::2] / 2))
-    cy = int(np.average(landmark[1::2] / 2))
-    center = (cx, cy)
+    center = ((bbox.left+bbox.right)/2, (bbox.top+bbox.bottom)/2)
     rot_mat = cv2.getRotationMatrix2D(center, alpha, 1)
     #whole image rotate
     #pay attention: 3rd param(col*row)
     img_rotated_by_alpha = cv2.warpAffine(img, rot_mat,(img.shape[1],img.shape[0]))
     landmark_ = np.asarray([(rot_mat[0][0]*x+rot_mat[0][1]*y+rot_mat[0][2],
                  rot_mat[1][0]*x+rot_mat[1][1]*y+rot_mat[1][2]) for (x, y) in landmark])
-    minx = int(min(landmark_[:,0]))
-    maxx = int(max(landmark_[:,0]))
-    miny = int(min(landmark_[:,1])) 
-    maxy = int(max(landmark_[:,1]))
-    w = maxx - minx
-    h = maxy - miny
-    rw = max(w, h*2)
-    dx = int((rw - w) /2)
-    dy = int((rw/2 -h )/2)+1
-    minx -= dx
-    maxx += dx
-    miny -= dy
-    maxy += dy
-
-    if minx < 0 or miny < 0 or maxx+1 >= img.shape[1] or maxy +1 >= img.shape[0]:
-        return (None, None, None) 
-#     face = img_rotated_by_alpha[miny:maxy+1,minx:maxx+1] 
-    return (img_rotated_by_alpha, [minx, miny, maxx, maxy], landmark_)
+    #crop face 
+    face = img_rotated_by_alpha[bbox.top:bbox.bottom+1,bbox.left:bbox.right+1]
+    return (face, landmark_)
 
 
 def flip(face, landmark):

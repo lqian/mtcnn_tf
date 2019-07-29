@@ -36,7 +36,7 @@ def gen_hard_bbox_pnet(srcAnnotations):
         imPath = annotation[0]
         # boxed change to float type
         ## bbox = map(float, annotation[1:])
-        # gt. each row mean bounding box
+        # gt. each row mean bounding box 
         boxes = np.array(annotation[1:], dtype=np.float32).reshape(-1, 12)[:, 0:4]
         #load image
         img = cv2.imread(os.path.join(imPath))

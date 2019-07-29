@@ -4,26 +4,29 @@ import sys, os
 rootPath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../"))
 sys.path.insert(0, rootPath)
 from training.mtcnn_config import config
+from tensorflow.python import graph_util
 
 class FcnDetector(object):
     #net_factory: which net
     #model_path: where the params'file is
-    def __init__(self, net_factory, model_path):
+    def __init__(self, net_factory, model_path, export=False):
         #create a graph
         graph = tf.Graph()
         with graph.as_default():
             #define tensor and op in graph(-1,1)
-            self.image_op = tf.placeholder(tf.float32, name='input_image')
+            self.image_op = tf.placeholder(tf.float32, name='input_image_op')
             self.width_op = tf.placeholder(tf.int32, name='image_width')
             self.height_op = tf.placeholder(tf.int32, name='image_height')
+            input_image = tf.placeholder(tf.float32, shape=[1, 12, 24, 3], name='input_image')
             image_reshape = tf.reshape(self.image_op, [1, self.height_op, self.width_op, 3])
             #self.cls_prob batch*2
             #self.bbox_pred batch*4
             #construct model here
             #self.cls_prob, self.bbox_pred = net_factory(image_reshape, training=False)
             #contains landmark
-            self.cls_prob, self.bbox_pred, _ = net_factory(image_reshape, training=False)
             
+            self.cls_prob, self.bbox_pred, _ = net_factory(input_image if export else image_reshape, training=False)
+                
             #allow 
             self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=tf.GPUOptions(allow_growth=True)))
             saver = tf.train.Saver()
@@ -34,6 +37,21 @@ class FcnDetector(object):
             assert  readstate, "the params dictionary is not valid"
             print("Restore param from: ", model_path)
             saver.restore(self.sess, model_path)
+        
+            if export:
+                for op in graph.get_operations():
+                    print(op.name, op.values())
+                print('export pnet')
+                input_graph_def = graph.as_graph_def()
+                output_graph_def = graph_util.convert_variables_to_constants(   
+                    sess=self.sess,
+                    input_graph_def=input_graph_def, 
+                    output_node_names=['cls_prob', 'bbox_pred']
+                    ) ##'conv4_1/Softmax', 'conv4_2/BiasAdd'  ##'cls_prob', 'bbox_pred'
+ 
+                with tf.gfile.GFile('pnet.pb', "wb") as f:  
+                    f.write(output_graph_def.SerializeToString()) #?????
+                print("%d ops in the final graph." % len(output_graph_def.node))  
     def predict(self, databatch):
         height, width, _ = databatch.shape
         # print(height, width)
