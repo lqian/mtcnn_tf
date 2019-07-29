@@ -74,8 +74,8 @@ def getBboxLandmarkFromTxt(txt, with_landmark=True):
         # bounding box, (x1, y1, x2, y2)
         ## bbox = (components[1], components[3], components[2], components[4])  
         bbox = (components[1], components[2], components[3], components[4])       
-        bbox = np.array(bbox, dtype=np.float32)
-        bbox = np.array(bbox, dtype=np.int32)
+        bbox = [float(_) for _ in bbox]
+        bbox = map(int, bbox)
         # landmark
         if not with_landmark:
             yield (img_path, BBox(bbox))

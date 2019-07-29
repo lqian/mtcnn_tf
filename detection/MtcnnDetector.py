@@ -5,7 +5,7 @@ import sys
 import os
 rootPath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../"))
 sys.path.insert(0, rootPath)
-from nms import py_nms
+from detection.nms import py_nms
 from training.mtcnn_config import config
 from tools.common_utils import convert_to_square
 
@@ -112,7 +112,7 @@ class MtcnnDetector(object):
     def processed_image(self, img, scale):
         height, width, channels = img.shape
         new_height = int(height * scale)  # resized new height
-        new_width = int(width * scale)  # resized new width
+        new_width = int(width * scale)    # resized new width
         new_dim = (new_width, new_height)
         img_resized = cv2.resize(img, new_dim, interpolation=cv2.INTER_LINEAR)  # resized image
         img_resized = (img_resized - 127.5) / 128
@@ -183,6 +183,7 @@ class MtcnnDetector(object):
         
         current_scale = max(net_size) * 1.0 / self.min_face_size  # find initial scale
         im_resized = self.processed_image(im, current_scale)
+#         temp = im_resized.swapaxes()
         current_height, current_width, _ = im_resized.shape
         # for fcn
         all_boxes = list()
@@ -191,6 +192,7 @@ class MtcnnDetector(object):
             #cls_cls_map : H*w*2
             #reg: H*w*4
             cls_cls_map, reg = self.pnet_detector.predict(im_resized)
+	        #print('pnet cls_prob shape:', cls_cls_map.shape, ',current height', current_height, ' current width', current_width)
             #boxes: num*9(x1,y1,x2,y2,score,x1_offset,y1_offset,x2_offset,y2_offset)
             boxes = self.generate_bbox(cls_cls_map[:, :,1], reg, current_scale, self.thresh[0])
 
@@ -219,7 +221,6 @@ class MtcnnDetector(object):
                              all_boxes[:, 3] + all_boxes[:, 8] * bbh,
                              all_boxes[:, 4]])
         boxes_c = boxes_c.T
-        print("proposal boxes numbers: ", len(boxes))
         return boxes, boxes_c, None
 
     def detect_rnet(self, im, dets):
