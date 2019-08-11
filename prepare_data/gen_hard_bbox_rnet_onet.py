@@ -220,7 +220,7 @@ def parse_args():
                         default='unknow', type=str)
     parser.add_argument('--gpus', dest='gpus', help='specify gpu to run. eg: --gpus=0,1',
                         default='0', type=str)
-    parser.add_argument('--epoch', dest='epoch', type=int, default=30, help='restore the epoch of checkpoint to prepare data')
+    parser.add_argument('--epoch', dest='epoch', type=int, default=300, help='restore the epoch of checkpoint to prepare data')
     args = parser.parse_args()
     return args
 
