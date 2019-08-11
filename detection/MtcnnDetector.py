@@ -187,7 +187,7 @@ class MtcnnDetector(object):
         current_height, current_width, _ = im_resized.shape
         # for fcn
         all_boxes = list()
-        while min(current_height, current_width) > max(net_size):
+        while min(current_height, current_width) >= max(net_size):
             #return the result predicted by pnet
             #cls_cls_map : H*w*2
             #reg: H*w*4

@@ -15,7 +15,7 @@ print('pnet input size:', net_size)
 def gen_hard_bbox_pnet(srcAnnotations):
 #     srcDataSet = os.path.join(rootPath, srcDataSet)
 #     srcAnnotations = os.path.join(rootPath, srcAnnotations)
-    saveFolder = os.path.join(rootPath, "/train-data/DATA/mtcnn-tf/tmp/data/pnet/")
+    saveFolder = os.path.join(config.ROOT_PATH, "tmp/data/%s/"%('pnet'))
     print(">>>>>> Gen hard samples for pnet...")
     typeName = ["pos", "neg", "part"]
     saveFiles = {}

@@ -9,12 +9,28 @@ from tensorflow.python import graph_util
 class FcnDetector(object):
     #net_factory: which net
     #model_path: where the params'file is
-    def __init__(self, net_factory, model_path, export=False):
+    def __init__(self, net_factory, model_path, test_pb=False, export=False):
+        if test_pb:
+            with tf.Graph().as_default():
+                output_graph_def = tf.GraphDef()
+                with open('pnet.pb', 'rb') as f:
+                    output_graph_def.ParseFromString(f.read())
+                    tf.import_graph_def(output_graph_def, name="")
+                self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=tf.GPUOptions(allow_growth=True)))
+                self.sess.run(tf.global_variables_initializer())
+                self.height_op = self.sess.graph.get_tensor_by_name('image_height:0')
+                self.width_op = self.sess.graph.get_tensor_by_name('image_width:0')
+                self.image_op = self.sess.graph.get_tensor_by_name('input_image:0')
+#                    input_is_training_tensor = sess.graph.get_tensor_by_name("is_training:0")
+                self.cls_prob = self.sess.graph.get_tensor_by_name('cls_prob:0')    
+                self.bbox_pred = self.sess.graph.get_tensor_by_name('bbox_pred:0')
+            return
+        
         #create a graph
         graph = tf.Graph()
         with graph.as_default():
             #define tensor and op in graph(-1,1)
-            self.image_op = tf.placeholder(tf.float32, name='input_image_op')
+            self.image_op = tf.placeholder(tf.float32, name='input_image')
             self.width_op = tf.placeholder(tf.int32, name='image_width')
             self.height_op = tf.placeholder(tf.int32, name='image_height')
             input_image = tf.placeholder(tf.float32, shape=[1, 12, 24, 3], name='input_image')
@@ -26,7 +42,7 @@ class FcnDetector(object):
             #contains landmark
             
             self.cls_prob, self.bbox_pred, _ = net_factory(input_image if export else image_reshape, training=False)
-                
+#             self.cls_prob, self.bbox_pred, _ = net_factory(image_reshape, training=False)   
             #allow 
             self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=tf.GPUOptions(allow_growth=True)))
             saver = tf.train.Saver()
@@ -53,6 +69,7 @@ class FcnDetector(object):
                     f.write(output_graph_def.SerializeToString()) #?????
                 print("%d ops in the final graph." % len(output_graph_def.node))  
     def predict(self, databatch):
+        print(databatch.shape)
         height, width, _ = databatch.shape
         # print(height, width)
         cls_prob, bbox_pred = self.sess.run([self.cls_prob, self.bbox_pred],

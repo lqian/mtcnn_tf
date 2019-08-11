@@ -11,8 +11,22 @@ net_name_dict = {'pnet':['conv4_1/Softmax', 'conv4_2/BiasAdd'],
 class Detector(object):
     #net_factory:rnet or onet
     #datasize:24 or 48
-    def __init__(self, net_factory, net, batch_size, model_path, export=False):
+    def __init__(self, net_factory, net, batch_size, model_path, export=False, test_pb=False):
         self.net_size = config.SIZE_OF_NET[net]
+        if test_pb:
+            with tf.Graph().as_default():
+                output_graph_def = tf.GraphDef()
+                with open(net +'.pb', 'rb') as f:
+                    output_graph_def.ParseFromString(f.read())
+                    tf.import_graph_def(output_graph_def, name="")
+                self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, gpu_options=tf.GPUOptions(allow_growth=True)))
+                self.sess.run(tf.global_variables_initializer())
+                self.image_op = self.sess.graph.get_tensor_by_name('input_image:0')
+#                    input_is_training_tensor = sess.graph.get_tensor_by_name("is_training:0")
+                self.cls_prob = self.sess.graph.get_tensor_by_name('cls_prob:0')    
+                self.bbox_pred = self.sess.graph.get_tensor_by_name('bbox_pred:0')
+            return
+        
         graph = tf.Graph()
         with graph.as_default():
             self.image_op = tf.placeholder(tf.float32, shape=[batch_size, self.net_size[0], self.net_size[1], 3], name='input_image')
