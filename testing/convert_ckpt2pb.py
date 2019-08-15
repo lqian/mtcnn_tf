@@ -153,7 +153,6 @@ class PNet_Export(object):
 #             converter.optimizations = [tf.lite.Optimize.OPTIMIZE_FOR_SIZE]
 #             converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8] 
 #             open("pnet.tflite-quantization", "wb").write(tflite_model)
-
 if __name__ == '__main__':
     args = parse_args()
     export_pb(args, 'pnet')
