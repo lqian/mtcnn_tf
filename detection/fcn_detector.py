@@ -33,7 +33,7 @@ class FcnDetector(object):
             self.image_op = tf.placeholder(tf.float32, name='input_image')
             self.width_op = tf.placeholder(tf.int32, name='image_width')
             self.height_op = tf.placeholder(tf.int32, name='image_height')
-            input_image = tf.placeholder(tf.float32, shape=[1, 12, 24, 3], name='input_image')
+            input_image = tf.placeholder(tf.float32, shape=[1, 8, 16, 3], name='input_image')
             image_reshape = tf.reshape(self.image_op, [1, self.height_op, self.width_op, 3])
             #self.cls_prob batch*2
             #self.bbox_pred batch*4

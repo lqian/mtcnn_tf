@@ -130,7 +130,7 @@ def train(netFactory, modelPrefix, endEpoch, dataPath, display=200, baseLr=0.01,
     i = 0
     #total steps
     MAX_STEP = int(total_num / config.BATCH_SIZE + 1) * endEpoch
-    print "\n\nTotal step: ", MAX_STEP
+    print("\n\nTotal step: ", MAX_STEP)
     epoch = 0
     sess.graph.finalize()    
     try:
@@ -191,7 +191,7 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    print "The training argument info is: ", args
+    print("The training argument info is: ", args)
     if args.stage not in ['pnet', 'rnet', 'onet']:
         raise Exception("Please specify stage by --stage=pnet or rnet or onet")
     dataPath = os.path.join("/train-data/DATA/mtcnn-tf", "tmp/data/%s"%(args.stage))

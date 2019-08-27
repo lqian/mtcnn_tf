@@ -121,12 +121,18 @@ def P_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=T
                         weights_regularizer=slim.l2_regularizer(0.0005), 
                         padding='valid'):
         net = slim.conv2d(inputs, 10, 3, stride=1,scope='conv1')
-        net = slim.max_pool2d(net, kernel_size=[2,2], stride=2, scope='pool1')
-        net = slim.conv2d(net, num_outputs=16, kernel_size=[3,6], stride=1, scope='conv2')
+        print(net)
+        net = slim.max_pool2d(net, kernel_size=[2,2], stride=[2,2], scope='pool1')
+        print(net)
+        net = slim.conv2d(net, num_outputs=16, kernel_size=[3,3], stride=1, scope='conv2')
+        print(net)
         net = slim.conv2d(net, num_outputs=32, kernel_size=[3,6], stride=1, scope='conv3')
+        print(net)
+#         net = slim.max_pool2d(net, kernel_size=[2,2], stride=[2,2], scope='pool2')
         #batch*H*W*2
         conv4_1 = slim.conv2d(net, num_outputs=2, kernel_size=[1,1], stride=1, scope='conv4_1', activation_fn=tf.nn.softmax)
-#         conv4_1 = slim.conv2d(net, num_outputs=2, kernel_size=[1,1], stride=1, scope='conv4_1', activation_fn=None)
+        
+	   #conv4_1 = slim.conv2d(net, num_outputs=2, kernel_size=[1,1], stride=1, scope='conv4_1', activation_fn=None)
         #batch*H*W*4
         bbox_pred = slim.conv2d(net, num_outputs=4, kernel_size=[1,1], stride=1, scope='conv4_2', activation_fn=None)
         #batch*H*W*10
@@ -206,7 +212,6 @@ def O_Net(inputs,label=None,bbox_target=None,landmark_target=None,training=True)
         bbox_pred = slim.fully_connected(fc1,num_outputs=4,scope="bbox_fc",activation_fn=None)
         #batch*10
         landmark_pred = slim.fully_connected(fc1,num_outputs=8,scope="landmark_fc",activation_fn=None)
-        #train
         if training:
             cls_loss = cls_ohem(cls_prob,label)
             bbox_loss = bbox_ohem(bbox_pred,bbox_target,label)

@@ -25,7 +25,7 @@ def read_single_tfrecord(tfrecord_file, batch_size, net):
     
     if net in config.SIZE_OF_NET:
         image_size = config.SIZE_OF_NET[net]
-    else:
+    else:   
         raise Exception("Unsupport your net type!")
     image = tf.decode_raw(image_features['image/encoded'], tf.uint8)
 #     image = tf.reshape(image, [image_size, 30*image_size/12, 3])
@@ -38,7 +38,7 @@ def read_single_tfrecord(tfrecord_file, batch_size, net):
     image, label,roi,landmark = tf.train.batch(
         [image, label,roi,landmark],
         batch_size=batch_size,
-        num_threads=2,
+        num_threads=4,
         capacity=1 * batch_size
     )
     label = tf.reshape(label, [batch_size])
