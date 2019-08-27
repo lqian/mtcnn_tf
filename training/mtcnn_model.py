@@ -124,7 +124,7 @@ def P_Net(inputs, label=None, bbox_target=None, landmark_target=None, training=T
         print(net)
         net = slim.max_pool2d(net, kernel_size=[2,2], stride=[2,2], scope='pool1')
         print(net)
-        net = slim.conv2d(net, num_outputs=16, kernel_size=[3,3], stride=1, scope='conv2')
+        net = slim.conv2d(net, num_outputs=16, kernel_size=[3,6], stride=1, scope='conv2')
         print(net)
         net = slim.conv2d(net, num_outputs=32, kernel_size=[3,6], stride=1, scope='conv3')
         print(net)

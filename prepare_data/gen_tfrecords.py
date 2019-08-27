@@ -4,12 +4,12 @@ rootPath = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__
 sys.path.insert(0, rootPath)
 import numpy as np
 import argparse
-
+from training.mtcnn_config import config
 from tools.tfrecord_utils import _process_image_withoutcoder, _convert_to_example_simple
 import tensorflow as tf
 
 def __iter_all_data(net, iterType):
-    saveFolder = "/train-data/DATA/mtcnn-tf/tmp/data/%s/"%(net)
+    saveFolder = os.path.join(config.ROOT_PATH, "tmp/data/%s/"%(net))
     if net not in ['pnet', 'rnet', 'onet']:
         raise Exception("The net type error!")
     if not os.path.isfile(os.path.join(saveFolder, 'pos.txt')):
@@ -118,7 +118,7 @@ def gen_tfrecords(net, shuffling=False):
                 __add_to_tfrecord(filename, image_example, tfrecord_writer)
         tfrecord_writer.close()
         print('\n')
-    saveFolder = "/train-data/DATA/mtcnn-tf/tmp/data/%s/"%(net)
+    saveFolder = os.path.join(config.ROOT_PATH, "tmp/data/%s/"%(net))
     #tfrecord name 
     if net == 'pnet':
         tfFileName = os.path.join(saveFolder, "all.tfrecord")

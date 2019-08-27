@@ -194,8 +194,8 @@ if __name__ == "__main__":
     print("The training argument info is: ", args)
     if args.stage not in ['pnet', 'rnet', 'onet']:
         raise Exception("Please specify stage by --stage=pnet or rnet or onet")
-    dataPath = os.path.join("/train-data/DATA/mtcnn-tf", "tmp/data/%s"%(args.stage))
-    modelPrefix = os.path.join("/train-data/DATA/mtcnn-tf/", "tmp/model/%s/%s"%(args.stage, args.stage))
+    dataPath = os.path.join(config.ROOT_PATH, "tmp/data/%s"%(args.stage))
+    modelPrefix = os.path.join(config.ROOT_PATH, "tmp/model/%s/%s"%(args.stage, args.stage))
     if not os.path.isdir(os.path.dirname(modelPrefix)):
         os.makedirs(os.path.dirname(modelPrefix))
     

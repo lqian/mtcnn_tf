@@ -21,7 +21,7 @@ def gen_landmark_data(srcTxt, net, augment=False):
     '''
     print(">>>>>> Start landmark data create...Stage: %s"%(net))
     srcTxt = os.path.join(rootPath, srcTxt)
-    saveFolder = "/train-data/DATA/mtcnn-tf/tmp/data/%s/"%(net)
+    saveFolder = os.path.join(config.ROOT_PATH, "tmp/data/%s/"%(net))
     saveImagesFolder = os.path.join(saveFolder, "landmark")
     
     if net not in config.CV_RESIZE_OF_NET:
@@ -40,8 +40,8 @@ def gen_landmark_data(srcTxt, net, augment=False):
             continue
             
 #         img = cv2.imread(imgPath)
-	if not exists(imgPath) :
-	    print("not exists file:", imgPath)
+        if not exists(imgPath):
+            print("not exists file:", imgPath)
             continue
 
         img = cv2.imread(imgPath)
