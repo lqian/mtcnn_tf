@@ -52,7 +52,7 @@ fi
 # 3. stage: R-Net
 ### generate training data(Face Detection Part) for RNet
 
-if [[ "$1" == "pnet" ]] || [[ "$1" == "rnet" ]]; then
+if [[ "$1" == "rnet" ]]; then
 	if [[ $refresh_train_data -eq 1 ]] ; then
 		echo "Preparing R-Net training data: bbox"
 		python prepare_data/gen_hard_bbox_rnet_onet.py --stage=rnet  --epoch ${epoch}
@@ -71,7 +71,7 @@ fi
 # 4. stage: O-Net
 ### generate training data(Face Detection Part) for ONet
 
-if [[ "$1" == "pnet" ]] || [[ "$1" == "rnet" ]] || [[ "$1" == "onet" ]]; then
+if [[ "$1" == "onet" ]]; then
 	if [[ $refresh_train_data -eq 1 ]] ; then
 		echo "Preparing O-Net training data: bbox"
 		python prepare_data/gen_hard_bbox_rnet_onet.py --stage=onet  --epoch ${epoch}

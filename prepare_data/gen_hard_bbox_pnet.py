@@ -34,6 +34,7 @@ def gen_hard_bbox_pnet(srcAnnotations):
         annotation = annotation.strip().split(' ')
         # image path
         imPath = annotation[0]
+        print(imPath)
         # boxed change to float type
         ## bbox = map(float, annotation[1:])
         # gt. each row mean bounding box 

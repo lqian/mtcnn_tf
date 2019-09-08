@@ -101,10 +101,10 @@ class MtcnnDetector(object):
         dx1, dy1, dx2, dy2 = [reg[t_index[0], t_index[1], i] for i in range(4)]
         reg = np.array([dx1, dy1, dx2, dy2])
         score = cls_map[t_index[0], t_index[1]]
-        boundingbox = np.vstack([np.round((self.stride * t_index[1]) / scale),
-                                 np.round((self.stride * t_index[0]) / scale),
-                                 np.round((self.stride * t_index[1] + cell_width) / scale),
-                                 np.round((self.stride * t_index[0] + cell_height) / scale),
+        boundingbox = np.vstack([np.round((self.stride * 4 * t_index[1]) / scale),
+                                 np.round((self.stride * 1 * t_index[0]) / scale),
+                                 np.round((self.stride * 4 *t_index[1] + cell_width) / scale),
+                                 np.round((self.stride * 1 * t_index[0] + cell_height) / scale),
                                  score,
                                  reg])
         return boundingbox.T
@@ -192,7 +192,7 @@ class MtcnnDetector(object):
             #cls_cls_map : H*w*2
             #reg: H*w*4
             cls_cls_map, reg = self.pnet_detector.predict(im_resized)
-	        #print('pnet cls_prob shape:', cls_cls_map.shape, ',current height', current_height, ' current width', current_width)
+# 	    print('pnet cls_prob shape:', cls_cls_map.shape, ',current height', current_height, ' current width', current_width)
             #boxes: num*9(x1,y1,x2,y2,score,x1_offset,y1_offset,x2_offset,y2_offset)
             boxes = self.generate_bbox(cls_cls_map[:, :,1], reg, current_scale, self.thresh[0])
 

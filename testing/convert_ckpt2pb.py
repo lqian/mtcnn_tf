@@ -1,3 +1,4 @@
+#coding:utf-8
 import argparse
 import os
 #from create_tf_record import *
@@ -5,8 +6,7 @@ from training.mtcnn_config import config
 from training.mtcnn_model import P_Net, R_Net, O_Net
 import tensorflow as tf
 from tensorflow.python import graph_util
-from training.mtcnn_config import net_name_dict
-from prepare_data.gen_hard_bbox_pnet import net_size
+from training.mtcnn_config import net_name_dict 
 
 def export_pb(args, net):
     modelPath = os.path.join(config.ROOT_PATH if args.model_dir is None else args.model_dir, 'tmp/model/', net)
@@ -144,9 +144,9 @@ class PNet_Export(object):
 #             open("pnet.tflite", "wb").write(tflite_model)
 
             ## export for tflite
-            converter = tf.lite.TFLiteConverter.from_frozen_graph('pnet.pb', ['input_image_std'],  net_name_dict['pnet'])
-            tflite_model = converter.convert()
-            open("pnet.tflite", "wb").write(tflite_model)
+#             converter = tf.lite.TFLiteConverter.from_frozen_graph('pnet.pb', ['input_image_std'],  net_name_dict['pnet'])
+#             tflite_model = converter.convert()
+#             open("pnet.tflite", "wb").write(tflite_model)
             
             # 量化 不正确
 #             converter = tf.lite.TFLiteConverter.from_saved_model('./')
